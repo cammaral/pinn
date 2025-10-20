@@ -1,11 +1,11 @@
 import torch.nn as nn
 
 class MLP(nn.Module):
-    def __init__(self, neurons, M, activation=nn.Sigmoid(), output=1):
+    def __init__(self, hidden, blocks, activation=nn.Sigmoid(), output=1):
         super().__init__()
-        self.hidden_layers = nn.ModuleList([nn.Linear(2, neurons)])
-        self.hidden_layers.extend([nn.Linear(neurons, neurons) for _ in range(M-1)])
-        self.output_layer = nn.Linear(neurons, output)
+        self.hidden_layers = nn.ModuleList([nn.Linear(2, hidden)])
+        self.hidden_layers.extend([nn.Linear(hidden, hidden) for _ in range(blocks-1)])
+        self.output_layer = nn.Linear(hidden, output)
         self.activation = activation
         self.activation_name = activation.__class__.__name__.lower()
 
