@@ -14,7 +14,7 @@ from equation.option_pricing import BlackScholes
 from optimize.option_princing import BlackScholeOptimizer
 from method.nn import MLP, ResNet
 from method.hnn import HybridCQN 
-from method.qnn import QuantumNeuralNetwork
+from method.qnn import QuantumNeuralNetwork, CorrelatorQuantumNeuralNetwork
 
 # =============================================================================
 # FUNÇÕES AUXILIARES
@@ -76,22 +76,31 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "QNN",
-    "run_id_prefix": "qnn",
+    "model_type": "CQNN_nonlinear",
+    "run_id_prefix": "cqnn",
     "lr": 2e-3,
-    "epochs": 15000
+    "epochs": 15000,
+    "activation": nn.Tanh()
 }
-#sweep_seed = {
-#    "n_qubits": [2],
-#    "n_layers": [1],
-#    "seed": [1958]
-#}
+
+sweep_seed = {
+    "n_qubits": [4],
+    "k": [2, 3],
+    "n_vertex": [5, 7, 9],
+    "n_layers": [1, 2, 3],
+    "seed": [1924, 1925, 1926]
+    #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
+}
+"""
+QNN
 sweep_seed = {
     "n_qubits": [2, 3, 4],
     "n_layers": [1, 2, 3],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
+"""
+
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
@@ -115,13 +124,15 @@ os.makedirs(LOSS_DIR, exist_ok=True)
 # Caminhos dos arquivos de sumário
 SUMMARY_CLASSIC_PATH = os.path.join(RESULTS_DIR, "sumario_classico.csv")
 SUMMARY_HYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_hibrido.csv")
-SUMMARY_QUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_quantico.csv") # Placeholder
+SUMMARY_QUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_quantico.csv")
+SUMMARY_CQUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_cquantico.csv")  # Placeholder
 
 # Dicionário para rastrear se o cabeçalho já foi escrito
 headers_written = {
     SUMMARY_CLASSIC_PATH: os.path.exists(SUMMARY_CLASSIC_PATH),
     SUMMARY_HYBRID_PATH: os.path.exists(SUMMARY_HYBRID_PATH),
     SUMMARY_QUANTUM_PATH: os.path.exists(SUMMARY_QUANTUM_PATH),
+    SUMMARY_CQUANTUM_PATH: os.path.exists(SUMMARY_CQUANTUM_PATH)
 }
 
 # Gerar os dados de treino e teste UMA VEZ
@@ -170,7 +181,23 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_layers=config['n_layers'])
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
             summary_path = SUMMARY_QUANTUM_PATH
-        
+        elif model_type == "CQNN": 
+            qnn = CorrelatorQuantumNeuralNetwork(n_qubits=config['n_qubits'], 
+                                       n_layers=config['n_layers'],
+                                       k=config['k'],
+                                       n_vertex=config['n_vertex'],
+                                       nonlinear=False)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            summary_path = SUMMARY_HYBRID_PATH
+        elif model_type == "CQNN_nonlinear": 
+            
+            qnn = CorrelatorQuantumNeuralNetwork(n_qubits=config['n_qubits'], 
+                                       n_layers=config['n_layers'],
+                                       k=config['k'],
+                                       n_vertex=config['n_vertex'],
+                                       nonlinear=True)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            summary_path = SUMMARY_HYBRID_PATH
         else:
             print(f"AVISO: Tipo de modelo '{model_type}' não reconhecido. Pulando run.")
             continue
