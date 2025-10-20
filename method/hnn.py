@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch as tc
-from .qpinn import QuantumSequentialNetwork, QuantumNeuralNetwork
+from .qnn import QuantumSequentialNetwork, QuantumNeuralNetwork
 from .nn import MLP, ResNet
 
 

@@ -1,0 +1,24 @@
+{
+  "run_id": "20251020-121050_PINN-ResNet_seed0_ep1000_lr0.02_hidden4_blocks5_activationTanh",
+  "timestamp": "20251020-121050",
+  "model_kind": "PINN-ResNet",
+  "model_class": "ResNet",
+  "model_cfg": {
+    "hidden": 4,
+    "blocks": 5,
+    "activation": "Tanh"
+  },
+  "epochs": 1000,
+  "lr": 0.02,
+  "seed": 0,
+  "loss_final": 0.00015429200720973313,
+  "has_loss_history": true,
+  "opt_num_params": 217,
+  "param_count_fallback": 217,
+  "train_seconds": 5.096553087234497,
+  "paths": {
+    "model_state": "results/bs_suite/20251020-121050_PINN-ResNet_seed0_ep1000_lr0.02_hidden4_blocks5_activationTanh/model_state.pt",
+    "optimizer_state": "results/bs_suite/20251020-121050_PINN-ResNet_seed0_ep1000_lr0.02_hidden4_blocks5_activationTanh/optimizer_state.pt",
+    "loss_csv": "results/bs_suite/20251020-121050_PINN-ResNet_seed0_ep1000_lr0.02_hidden4_blocks5_activationTanh/loss_history.csv"
+  }
+}

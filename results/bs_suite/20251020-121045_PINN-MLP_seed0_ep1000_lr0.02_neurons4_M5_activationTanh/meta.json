@@ -1,0 +1,24 @@
+{
+  "run_id": "20251020-121045_PINN-MLP_seed0_ep1000_lr0.02_neurons4_M5_activationTanh",
+  "timestamp": "20251020-121045",
+  "model_kind": "PINN-MLP",
+  "model_class": "MLP",
+  "model_cfg": {
+    "neurons": 4,
+    "M": 5,
+    "activation": "Tanh"
+  },
+  "epochs": 1000,
+  "lr": 0.02,
+  "seed": 0,
+  "loss_final": 0.0005876531358808279,
+  "has_loss_history": true,
+  "opt_num_params": 97,
+  "param_count_fallback": 97,
+  "train_seconds": 2.591798782348633,
+  "paths": {
+    "model_state": "results/bs_suite/20251020-121045_PINN-MLP_seed0_ep1000_lr0.02_neurons4_M5_activationTanh/model_state.pt",
+    "optimizer_state": "results/bs_suite/20251020-121045_PINN-MLP_seed0_ep1000_lr0.02_neurons4_M5_activationTanh/optimizer_state.pt",
+    "loss_csv": "results/bs_suite/20251020-121045_PINN-MLP_seed0_ep1000_lr0.02_neurons4_M5_activationTanh/loss_history.csv"
+  }
+}
