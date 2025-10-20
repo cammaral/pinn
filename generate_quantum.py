@@ -76,16 +76,21 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "MLP",
-    "run_id_prefix": "mlp",
-    "lr": 5e-3,
-    "epochs": 15000,
-    "activation": nn.Tanh()
+    "model_type": "QNN",
+    "run_id_prefix": "qnn",
+    "lr": 2e-3,
+    "epochs": 15000
 }
+#sweep_seed = {
+#    "n_qubits": [2],
+#    "n_layers": [1],
+#    "seed": [1958]
+#}
 sweep_seed = {
-    "hidden": [2, 3, 5],
-    "blocks": [1, 2, 3],
-    "seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
+    "n_qubits": [2, 3, 4],
+    "n_layers": [1, 2, 3],
+    "seed": [1924, 1925, 1926]
+    #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
@@ -160,11 +165,11 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                            activation=config['activation'])
             summary_path = SUMMARY_CLASSIC_PATH
         
-        elif model_type == "QPINN": 
+        elif model_type == "QNN": 
             qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'], 
                                        n_layers=config['n_layers'])
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
-            summary_path = SUMMARY_HYBRID_PATH
+            summary_path = SUMMARY_QUANTUM_PATH
         
         else:
             print(f"AVISO: Tipo de modelo '{model_type}' não reconhecido. Pulando run.")
