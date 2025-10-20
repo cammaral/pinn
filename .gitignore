@@ -1,0 +1,24 @@
+# Ignorar arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Ignorar dependências (devem ser reinstaladas)
+/venv/
+/node_modules/
+
+# Ignorar arquivos de segredos e configuração local
+.env
+config.ini
+*.key
+
+# Ignorar logs
+*.log
+
+# Ignorar pastas de cache e build
+__pycache__/
+build/
+dist/
+
+# Ignorar arquivos de IDEs (ex: VS Code, PyCharm)
+.vscode/
+.idea/
