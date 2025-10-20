@@ -1,2 +1,0 @@
-model_type,run_id_prefix,lr,epochs,n_qubits,n_layers,seed,run_id,mse_teste_normalizado,mse_teste_desnormalizado,num_params,training_time_sec,model_path,loss_history_path,final_total_loss,mean_last_100_loss
-QNN,qnn,0.002,100,2,1,1958,qnn_n_qubits_2_n_l_1_seed_1958,0.053714342415332794,1052.8011474609375,11,5.389801740646362,experimentos_pinn/modelos_salvos/modelo_qnn_n_qubits_2_n_l_1_seed_1958.pth,experimentos_pinn/historicos_loss/loss_qnn_n_qubits_2_n_l_1_seed_1958.json,0.267520546913147,0.3647439679503441
