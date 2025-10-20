@@ -188,7 +188,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_vertex=config['n_vertex'],
                                        nonlinear=False)
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
-            summary_path = SUMMARY_HYBRID_PATH
+            summary_path = SUMMARY_CQUANTUM_PATH
         elif model_type == "CQNN_nonlinear": 
             
             qnn = CorrelatorQuantumNeuralNetwork(n_qubits=config['n_qubits'], 
@@ -197,7 +197,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_vertex=config['n_vertex'],
                                        nonlinear=True)
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
-            summary_path = SUMMARY_HYBRID_PATH
+            summary_path = SUMMARY_CQUANTUM_PATH
         else:
             print(f"AVISO: Tipo de modelo '{model_type}' não reconhecido. Pulando run.")
             continue
