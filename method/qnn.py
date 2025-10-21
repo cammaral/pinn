@@ -71,8 +71,10 @@ class CorrelatorQuantumNeuralNetwork(nn.Module):
             elif self.entangler == 'strong':
                 qml.StronglyEntanglingLayers(weights, wires=range(n_qubits))
             return [qml.expval(obs) for obs in self.obs_list]
-
-        weight_shapes = {"weights": (self.n_layers, self.n_qubits)}
+        if self.entangler == 'basic':
+            weight_shapes = {"weights": (self.n_layers, self.n_qubits)}
+        elif self.entangler == 'strong':
+            weight_shapes = {"weights": (self.n_layers, self.n_qubits, 3)}
         self.q_layer = TorchLayer(circuit, weight_shapes)
 
     def _generate_obs_list(self):
