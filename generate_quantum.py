@@ -75,6 +75,7 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
+"""
 
 base_seed_test = {
     "model_type": "CQNN",
@@ -108,7 +109,6 @@ base_seed_test = {
     "epochs": 15000,
     activation": nn.Tanh()
 }
-"""
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
