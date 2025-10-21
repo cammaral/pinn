@@ -141,6 +141,47 @@ bse = BlackScholes(eps=1e-10)
 data_treino = bse.generate_data(seed=2025)
 data_teste = bse.generate_data(seed=42)
 
+# =============================================================================
+# VERIFICADORES: pular runs já calculadas
+# =============================================================================
+
+def artifact_paths(run_id, models_dir, loss_dir):
+    model_save_path = os.path.join(models_dir, f"modelo_{run_id}.pth")
+    loss_history_path = os.path.join(loss_dir, f"loss_{run_id}.json")
+    return model_save_path, loss_history_path
+
+def summary_has_run(summary_path, run_id):
+    """
+    Retorna True se o CSV de sumário já contém a run_id.
+    Leitura leve (apenas coluna run_id).
+    """
+    if not os.path.exists(summary_path):
+        return False
+    try:
+        df_ids = pd.read_csv(summary_path, usecols=["run_id"])
+        return str(run_id) in set(df_ids["run_id"].astype(str))
+    except Exception:
+        # Se não conseguir ler, não bloqueia: assume que não está no sumário
+        return False
+
+def already_done(config, summary_path, models_dir=MODELS_DIR, loss_dir=LOSS_DIR, require_summary=True):
+    """
+    Verifica se a run já foi calculada:
+      - existem modelo .pth e loss .json?
+      - (opcional) já consta no sumário?
+    Se config tiver 'force'=True, sempre retorna False (não pula).
+    """
+    if config.get("force", False):
+        return False
+
+    run_id = config["run_id"]
+    model_path, loss_path = artifact_paths(run_id, models_dir, loss_dir)
+
+    have_model   = os.path.exists(model_path)
+    have_loss    = os.path.exists(loss_path)
+    have_summary = summary_has_run(summary_path, run_id) if require_summary else True
+
+    return have_model and have_loss and have_summary
 
 # =============================================================================
 # 3. LOOP DE TREINAMENTO E AVALIAÇÃO (MODIFICADO)
@@ -153,7 +194,10 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     
     run_id = config["run_id"]
     print(f"\n--- Iniciando Run: {run_id} ---")
-
+    # Checagem: se já foi feito, pula
+    if already_done(config, summary_path, MODELS_DIR, LOSS_DIR, require_summary=True):
+        print(f"[SKIP] Artefatos e sumário já existem para '{run_id}'. Pulando cálculo.")
+        continue
     # --- A. Garantir Reprodutibilidade (Aceita loop de seed) ---
     seed = config.get('seed', 42)
     tc.manual_seed(seed)
