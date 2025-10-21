@@ -76,8 +76,8 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "MLP",
-    "run_id_prefix": "mlp",
+    "model_type": "ResNet",
+    "run_id_prefix": "resnet",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": nn.Tanh()

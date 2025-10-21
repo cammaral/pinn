@@ -76,11 +76,11 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "CQNN_nonlinear",
+    "model_type": "CQNN",
     "run_id_prefix": "cqnn",
     "lr": 2e-3,
     "epochs": 15000,
-    "activation": nn.Tanh()
+#    "activation": nn.Tanh()
 }
 
 sweep_seed = {
