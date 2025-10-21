@@ -75,20 +75,21 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
-"""
 
 base_seed_test = {
     "model_type": "CQNN",
-    "run_id_prefix": "cqnn",
+    "run_id_prefix": "cqnn_basic",
     "lr": 2e-3,
     "epochs": 15000,
-#    "activation": nn.Tanh()
+    "activation": None, #nn.Tanh(),
+    'entangler': 'basic'
+
 }
 
 sweep_seed = {
     "n_qubits": [4],
     "k": [2, 3],
-    "n_vertex": [5, 7, 9],
+    "n_vertex": [5, 7, 9, 12],
     "n_layers": [1, 2, 3],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
@@ -107,8 +108,8 @@ base_seed_test = {
     "run_id_prefix": "qnn",
     "lr": 2e-3,
     "epochs": 15000,
-    activation": nn.Tanh()
 }
+"""
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
@@ -190,7 +191,8 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
         
         elif model_type == "QNN": 
             qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'], 
-                                       n_layers=config['n_layers'])
+                                       n_layers=config['n_layers'],
+                                       entangler=config.get('entangler'))
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
             summary_path = SUMMARY_QUANTUM_PATH
         elif model_type == "CQNN": 
@@ -198,7 +200,8 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_layers=config['n_layers'],
                                        k=config['k'],
                                        n_vertex=config['n_vertex'],
-                                       nonlinear=False)
+                                       nonlinear=False,
+                                       entangler=config.get('entangler'))
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
             summary_path = SUMMARY_CQUANTUM_PATH
         elif model_type == "CQNN_nonlinear": 
@@ -207,7 +210,8 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_layers=config['n_layers'],
                                        k=config['k'],
                                        n_vertex=config['n_vertex'],
-                                       nonlinear=True)
+                                       nonlinear=True,
+                                       entangler=config.get('entangler'))
             model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
             summary_path = SUMMARY_CQUANTUM_PATH
         else:
