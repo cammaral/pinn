@@ -106,6 +106,7 @@ base_seed_test = {
     "run_id_prefix": "qnn",
     "lr": 2e-3,
     "epochs": 15000,
+    activation": nn.Tanh()
 }
 """
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
