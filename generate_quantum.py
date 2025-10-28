@@ -78,11 +78,11 @@ experiment_grid = []
 
 base_seed_test = {
     "model_type": "CQNN",
-    "run_id_prefix": "cqnn_basic",
+    "run_id_prefix": "cqnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'basic'
+    'entangler': 'strong'
 
 }
 
