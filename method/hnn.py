@@ -68,7 +68,7 @@ class HybridCQN(nn.Module):
     def forward(self, x):
         h = x if self.pre is None else self.pre(x)   # (B, F)
         q_in = self.to_qubits(h)                     # (B, n_qubits)  -- sem ativação
-        q_out = self.qnn(q_in)                       # (B, n_vertex)
+        q_out = self.qnn(q_in)                       # (B, n_qubits)
         if self.post is None:                        # CQO
             return self.q_out(q_out)                 # linear, sem ativação
         r_in = self.decode_to_post(q_out)

@@ -11,7 +11,7 @@ class QuantumNeuralNetwork(nn.Module):
         self.n_qubits = n_qubits
         self.n_layers = n_layers
         self.n_vertex = n_qubits #Just to keep compatibility
-        self.entanger = entangler
+        self.entangler = entangler
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev, interface="torch")
@@ -23,8 +23,12 @@ class QuantumNeuralNetwork(nn.Module):
                 qml.StronglyEntanglingLayers(weights, wires=range(n_qubits))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
-        weight_shapes = {"weights": (n_layers, n_qubits)}
+        if self.entangler == 'basic':
+            weight_shapes = {"weights": (self.n_layers, self.n_qubits)}
+        elif self.entangler == 'strong':
+            weight_shapes = {"weights": (self.n_layers, self.n_qubits, 3)}
         self.q_layer = TorchLayer(circuit, weight_shapes)
+        #self.q_layer = TorchLayer(circuit, weight_shapes)
         #self.linear = nn.Linear(n_qubits, output_dim)
 
     def forward(self, x):

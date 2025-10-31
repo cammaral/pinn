@@ -75,10 +75,10 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
-
+"""
 base_seed_test = {
-    "model_type": "CQNN",
-    "run_id_prefix": "cqnn_strong",
+    "model_type": "QNN",
+    "run_id_prefix": "qnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
@@ -97,7 +97,7 @@ sweep_seed = {
 """
 
 sweep_seed = {
-    "n_qubits": [5,9],
+    "n_qubits": [5,7],
     "n_layers": [1, 2, 3, 5],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
@@ -105,11 +105,13 @@ sweep_seed = {
 
 base_seed_test = {
     "model_type": "QNN",
-    "run_id_prefix": "qnn",
+    "run_id_prefix": "qnn_basic",
     "lr": 2e-3,
     "epochs": 15000,
+    "activation": None, #nn.Tanh(),
+    'entangler': 'basic'
 }
-"""
+
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
