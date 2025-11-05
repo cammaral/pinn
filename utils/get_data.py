@@ -75,9 +75,9 @@ def generate_data(r=0.05, K=40, T=1.0, sigma=0.2, S_max=160, N_domain=100, N_bou
         'boundary_0': (S_boundary_0, t_boundary_0, V_boundary_0),
         'boundary_max': (S_boundary_max, t_boundary_max, V_boundary_max),
     }
-
+"""
 def convert_to_tensor(data, requires_grad=True, dtype="float32", backend="torch"):
-    """
+
     Converts numpy data to PyTorch or TensorFlow tensor.
 
     Parameters:
@@ -88,7 +88,7 @@ def convert_to_tensor(data, requires_grad=True, dtype="float32", backend="torch"
 
     Returns:
         torch.Tensor or tf.Tensor
-    """
+
     data = np.array(data)
 
     if backend == "torch":
@@ -101,7 +101,50 @@ def convert_to_tensor(data, requires_grad=True, dtype="float32", backend="torch"
 
     else:
         raise ValueError("Backend must be either 'torch' or 'tf'")
+"""
 
+def convert_to_tensor(data, requires_grad=True, dtype="float32", backend="torch", device=None):
+    """
+    Converts numpy data to PyTorch or TensorFlow tensor.
+
+    Parameters:
+        data (array): Input data (NumPy array or convertible).
+        requires_grad (bool): If gradients are needed (only used for PyTorch).
+        dtype (str or torch/tf dtype): Desired data type.
+        backend (str): "torch" or "tf"
+        device (str or torch.device or None): Target device for PyTorch tensors (e.g., "cuda", "cpu", "mps").
+
+    Returns:
+        torch.Tensor or tf.Tensor
+    """
+    if backend == "torch":
+        # dtype
+        tensor_dtype = getattr(tc, dtype) if isinstance(dtype, str) else dtype
+
+        # Se já for tensor Torch, só ajusta dtype/device/grad sem copiar à toa
+        if isinstance(data, tc.Tensor):
+            t = data.to(dtype=tensor_dtype)
+            if device is not None:
+                t = t.to(device)
+            t.requires_grad_(bool(requires_grad))
+            return t.reshape(-1, 1)
+
+        # Caso geral: cria tensor a partir de array
+        data = np.array(data)
+        return tc.tensor(
+            data,
+            dtype=tensor_dtype,
+            device=device,
+            requires_grad=requires_grad
+        ).reshape(-1, 1)
+
+    elif backend == "tf":
+        data = np.array(data)
+        tensor_dtype = dtype if isinstance(dtype, tf.DType) else getattr(tf, dtype)
+        return tf.convert_to_tensor(data.reshape(-1, 1), dtype=tensor_dtype)
+
+    else:
+        raise ValueError("Backend must be either 'torch' or 'tf'")
 # ======================================================
 # 💾 Data Saving and Loading (Synthetic)
 # ======================================================
