@@ -75,7 +75,7 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
-
+device = 'cuda'
 base_seed_test = {
     "model_type": "CQNN",
     "run_id_prefix": "cqnn_basic",
@@ -89,7 +89,7 @@ base_seed_test = {
 sweep_seed = {
     "n_qubits": [7],
     "k": [2, 3],
-    "n_vertex": [10, 15, 20, 30, 35],
+    "n_vertex": [10, 20, 30, 35],
     "n_layers": [1, 2, 3, 5],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
@@ -182,29 +182,29 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     try:
         if model_type == "MLP":
             # <<< CORREÇÃO AQUI >>> (Estava usando 'hidden' e 'blocks' por engano)
-            model = MLP(hidden=config['hidden'], blocks=config['blocks'], 
+            model = MLP(hidden=config['hidden'], blocks=config['blocks'], device=device,
                         activation=config['activation'])
             summary_path = SUMMARY_CLASSIC_PATH
         
         elif model_type == "ResNet":
-            model = ResNet(hidden=config['hidden'], blocks=config['blocks'], 
+            model = ResNet(hidden=config['hidden'], blocks=config['blocks'], device=device,
                            activation=config['activation'])
             summary_path = SUMMARY_CLASSIC_PATH
         
         elif model_type == "QNN": 
             qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'], 
-                                       n_layers=config['n_layers'],
+                                       n_layers=config['n_layers'], device=device,
                                        entangler=config.get('entangler'))
-            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn,device=device, classical_post=None)
             summary_path = SUMMARY_QUANTUM_PATH
         elif model_type == "CQNN": 
             qnn = CorrelatorQuantumNeuralNetwork(n_qubits=config['n_qubits'], 
                                        n_layers=config['n_layers'],
                                        k=config['k'],
                                        n_vertex=config['n_vertex'],
-                                       nonlinear=False,
+                                       nonlinear=False, device=device,
                                        entangler=config.get('entangler'))
-            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn, device=device,classical_post=None)
             summary_path = SUMMARY_CQUANTUM_PATH
         elif model_type == "CQNN_nonlinear": 
             
@@ -212,9 +212,9 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                                        n_layers=config['n_layers'],
                                        k=config['k'],
                                        n_vertex=config['n_vertex'],
-                                       nonlinear=True,
+                                       nonlinear=True, device=device,
                                        entangler=config.get('entangler'))
-            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn,device=device, classical_post=None)
             summary_path = SUMMARY_CQUANTUM_PATH
         else:
             print(f"AVISO: Tipo de modelo '{model_type}' não reconhecido. Pulando run.")
@@ -230,6 +230,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
         model, 
         epochs=config['epochs'], 
         lr=config['lr'],
+        device = device,
         weights=config.get('weights', [1,1,1,1])
     )
     

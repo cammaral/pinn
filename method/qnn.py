@@ -163,10 +163,12 @@ class QuantumNeuralNetwork(nn.Module):
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
         pl_backend = pick_pl_backend(device)
-        dev = qml.device(pl_backend, wires=n_qubits)
+        #dev = qml.device(pl_backend, wires=n_qubits)
+        #dev = qml.device("lightning.qubit", wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
         # ==========================================================
-
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method='backprop')
+        #@qml.qnode(dev, interface="torch", diff_method='adjoint')
         def circuit(inputs, weights):
             qml.AngleEmbedding(inputs, wires=range(n_qubits))
             if self.entangler == 'basic':
@@ -231,10 +233,12 @@ class CorrelatorQuantumNeuralNetwork(nn.Module):
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
         pl_backend = pick_pl_backend(device)
-        dev = qml.device(pl_backend, wires=self.n_qubits)
-        # ===========================================
-
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        #dev = qml.device(pl_backend, wires=n_qubits)
+        #dev = qml.device("lightning.qubit", wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
+        # ==========================================================
+        @qml.qnode(dev, interface="torch", diff_method='backprop')
+        #@qml.qnode(dev, interface="torch", diff_method='adjoint')
         def circuit(inputs, weights):
             qml.AngleEmbedding(inputs, wires=range(n_qubits))
             if self.entangler == 'basic':

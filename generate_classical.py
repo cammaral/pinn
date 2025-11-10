@@ -73,18 +73,18 @@ def pretty_print(config_list, num_to_show=5):
 
 # Lista final que será usada pelo script
 experiment_grid = []
-
+device = 'cuda'
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "ResNet",
-    "run_id_prefix": "resnet",
+    "model_type": "MLP",
+    "run_id_prefix": "mlp",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": nn.Tanh()
 }
 sweep_seed = {
-    "hidden": [2, 3, 5],
-    "blocks": [1, 2, 3],
+    "hidden": [10, 15, 20],
+    "blocks": [1, 2, 3, 5],
     "seed": [1900, 1905, 1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
@@ -152,19 +152,19 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     try:
         if model_type == "MLP":
             # <<< CORREÇÃO AQUI >>> (Estava usando 'hidden' e 'blocks' por engano)
-            model = MLP(hidden=config['hidden'], blocks=config['blocks'], 
+            model = MLP(hidden=config['hidden'], blocks=config['blocks'], device=device,
                         activation=config['activation'])
             summary_path = SUMMARY_CLASSIC_PATH
         
         elif model_type == "ResNet":
-            model = ResNet(hidden=config['hidden'], blocks=config['blocks'], 
+            model = ResNet(hidden=config['hidden'], blocks=config['blocks'],  device=device,
                            activation=config['activation'])
             summary_path = SUMMARY_CLASSIC_PATH
         
         elif model_type == "QPINN": 
-            qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'], 
+            qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'],  device=device,
                                        n_layers=config['n_layers'])
-            model = HybridCQN(classical_pre=None, qnn_block=qnn, classical_post=None)
+            model = HybridCQN(classical_pre=None, qnn_block=qnn,  device=device, classical_post=None)
             summary_path = SUMMARY_HYBRID_PATH
         
         else:
@@ -181,6 +181,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
         model, 
         epochs=config['epochs'], 
         lr=config['lr'],
+        device=device,
         weights=config.get('weights', [1,1,1,1])
     )
     
