@@ -75,7 +75,7 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
-device = 'cuda'
+device = 'cpu'
 base_seed_test = {
     "model_type": "CQNN",
     "run_id_prefix": "cqnn_basic",
@@ -87,6 +87,16 @@ base_seed_test = {
 }
 
 sweep_seed = {
+    "n_qubits": [3],
+    "k": [2],
+    "n_vertex": [1],
+    "n_layers": [2],
+    "seed": [1924]
+    #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
+}
+
+"""
+sweep_seed = {
     "n_qubits": [7],
     "k": [2, 3],
     "n_vertex": [10, 20, 30, 35],
@@ -94,7 +104,7 @@ sweep_seed = {
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
-"""
+
 
 sweep_seed = {
     "n_qubits": [5,7],

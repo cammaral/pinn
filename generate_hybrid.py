@@ -15,6 +15,7 @@ from optimize.option_princing import BlackScholeOptimizer
 from method.nn import MLP, ResNet
 from method.hnn import HybridCQN 
 from method.qnn import QuantumNeuralNetwork, CorrelatorQuantumNeuralNetwork
+from utils.save import *
 
 # =============================================================================
 # FUNÇÕES AUXILIARES
@@ -72,7 +73,7 @@ def pretty_print(config_list, num_to_show=5):
 # =============================================================================
 
 # Lista final que será usada pelo script
-device = 'cpu'
+device = 'gpu'
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
@@ -86,18 +87,20 @@ base_seed_test = {
     'entangler': 'basic'
 }
 
+
+
 sweep_seed = {
-    "hidden": [2, 3, 5],
-    "blocks": [1, 2, 3],
+    "hidden": [3, 5],
+    "blocks": [1, 3],
     "n_qubits": [4],
     "k": [2, 3],
     "n_vertex": [5, 8, 12],
-    "n_layers": [1, 2, 3, 5],
+    "n_layers": [2, 3, 5],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
-"""
 
+"""
 sweep_seed = {
     "n_qubits": [5,7],
     "n_layers": [1, 2, 3, 5],
@@ -128,18 +131,18 @@ pretty_print(experiment_grid, num_to_show=3)
 # =============================================================================
 
 # Criar pastas para salvar os resultados
-RESULTS_DIR = "experimentos_pinn"
+#RESULTS_DIR = "experimentos_pinn"
 MODELS_DIR = os.path.join(RESULTS_DIR, "modelos_salvos")
 LOSS_DIR = os.path.join(RESULTS_DIR, "historicos_loss") 
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOSS_DIR, exist_ok=True) 
 
 # Caminhos dos arquivos de sumário
-SUMMARY_CLASSIC_PATH = os.path.join(RESULTS_DIR, "sumario_classico.csv")
-SUMMARY_HYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_hibrido.csv")
-SUMMARY_CHYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_chibrido.csv")
-SUMMARY_QUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_quantico.csv")
-SUMMARY_CQUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_cquantico.csv")  # Placeholder
+#SUMMARY_CLASSIC_PATH = os.path.join(RESULTS_DIR, "sumario_classico.csv")
+#SUMMARY_HYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_hibrido.csv")
+#SUMMARY_CHYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_chibrido.csv")
+#SUMMARY_QUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_quantico.csv")
+#SUMMARY_CQUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_cquantico.csv")  # Placeholder
 
 # Dicionário para rastrear se o cabeçalho já foi escrito
 headers_written = {
@@ -171,18 +174,25 @@ print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     
     run_id = config["run_id"]
-    print(f"\n--- Iniciando Run: {run_id} ---")
-    # Checagem: se já foi feito, pula
+    model_type = config["model_type"]
+
+    # Descobre o CSV alvo para essa run
+    summary_path = resolve_summary_path(model_type)
+
+    # >>> VERIFICADOR: pula se já foi executada <<<
+    if run_already_done(run_id, summary_path=summary_path, model_dir=MODELS_DIR, loss_dir=LOSS_DIR):
+        print(f"Pulando run '{run_id}' — já encontrada em sumário/artefatos.")
+        continue
     # --- A. Garantir Reprodutibilidade (Aceita loop de seed) ---
     seed = config.get('seed', 42)
     tc.manual_seed(seed)
     np.random.seed(seed)
 
     # --- B. Criar o Modelo (Fábrica de Modelos) ---
-    model_type = config["model_type"]
+    #model_type = config["model_type"]
     model_class = config["model_class"]
     model = None
-    summary_path = None 
+    #summary_path = None 
 
     try:
         if model_type == "HCQNN": 
