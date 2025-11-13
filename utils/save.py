@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import torch.nn as nn
+import json
 
 RESULTS_DIR = "experimentos_pinn"
 
@@ -13,6 +15,10 @@ def resolve_summary_path(model_type):
     # mapeia para o CSV correto (ajuste se tiver mais tipos)
     if model_type == "HCQNN":
         return SUMMARY_CHYBRID_PATH
+    elif model_type == 'HQNN':
+        return SUMMARY_HYBRID_PATH
+    elif model_type == 'CQNN':
+        return SUMMARY_CQUANTUM_PATH
     elif model_type == "CQNN_nonlinear":
         return SUMMARY_CQUANTUM_PATH
     elif model_type == "QNN":
@@ -37,3 +43,18 @@ def run_already_done(run_id, summary_path=None, model_dir=None, loss_dir=None):
         if os.path.exists(os.path.join(loss_dir, f"loss_{run_id}.json")):
             return True
     return False
+
+activation_map = {
+    "Tanh()": nn.Tanh(),
+    "ReLU()": nn.ReLU(),
+}
+
+def load_loss_history(path):
+    """Função auxiliar para carregar um histórico de loss de um JSON."""
+    try:
+        with open(path, 'r') as f:
+            history = json.load(f)
+        return history
+    except Exception as e:
+        print(f"AVISO: Não foi possível carregar o histórico de loss: {e}")
+        return None

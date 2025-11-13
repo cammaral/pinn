@@ -78,8 +78,8 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
-    "model_type": "HCQNN",
-    "run_id_prefix": "hcqnn_basic_mlp",
+    "model_type": "HQNN",
+    "run_id_prefix": "hqnn_basic_mlp",
     "model_class": "MLP",
     "activation": nn.Tanh(),
     "lr": 2e-3,
@@ -88,35 +88,16 @@ base_seed_test = {
 }
 
 
-
 sweep_seed = {
     "hidden": [3, 5],
     "blocks": [1, 3],
-    "n_qubits": [4],
-    "k": [2, 3],
-    "n_vertex": [5, 8, 12],
-    "n_layers": [2, 3, 5],
-    "seed": [1924, 1925, 1926]
-    #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
-}
-
-"""
-sweep_seed = {
-    "n_qubits": [5,7],
+    "n_qubits": [2, 3],
     "n_layers": [1, 2, 3, 5],
     "seed": [1924, 1925, 1926]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
 
-base_seed_test = {
-    "model_type": "QNN",
-    "run_id_prefix": "qnn_basic",
-    "lr": 2e-3,
-    "epochs": 15000,
-    "activation": None, #nn.Tanh(),
-    'entangler': 'strong'
-}
-"""
+
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
@@ -137,12 +118,6 @@ LOSS_DIR = os.path.join(RESULTS_DIR, "historicos_loss")
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOSS_DIR, exist_ok=True) 
 
-# Caminhos dos arquivos de sumário
-#SUMMARY_CLASSIC_PATH = os.path.join(RESULTS_DIR, "sumario_classico.csv")
-#SUMMARY_HYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_hibrido.csv")
-#SUMMARY_CHYBRID_PATH = os.path.join(RESULTS_DIR, "sumario_chibrido.csv")
-#SUMMARY_QUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_quantico.csv")
-#SUMMARY_CQUANTUM_PATH = os.path.join(RESULTS_DIR, "sumario_cquantico.csv")  # Placeholder
 
 # Dicionário para rastrear se o cabeçalho já foi escrito
 headers_written = {
@@ -168,8 +143,6 @@ data_teste = bse.generate_data(seed=42)
 # 3. LOOP DE TREINAMENTO E AVALIAÇÃO (MODIFICADO)
 # =============================================================================
 print(f"Iniciando {len(experiment_grid)} experimentos...")
-print(f"Resultados clássicos serão salvos em: {SUMMARY_CLASSIC_PATH}")
-print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     
@@ -195,12 +168,9 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     #summary_path = None 
 
     try:
-        if model_type == "HCQNN": 
-            qnn = CorrelatorQuantumNeuralNetwork(n_qubits=config['n_qubits'], 
+        if model_type == "HQNN": 
+            qnn = QuantumNeuralNetwork(n_qubits=config['n_qubits'], 
                                        n_layers=config['n_layers'],
-                                       k=config['k'],
-                                       n_vertex=config['n_vertex'],
-                                       nonlinear=False,
                                        device=device,
                                        entangler=config.get('entangler'))
             if model_class == "MLP":
@@ -213,7 +183,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
                             activation=config['activation'])
                                               
             model = HybridCQN(classical_pre=model_c, qnn_block=qnn,device=device, classical_post=None)
-            summary_path = SUMMARY_CHYBRID_PATH
+            summary_path = SUMMARY_HYBRID_PATH
 
 
 
