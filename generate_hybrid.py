@@ -79,12 +79,12 @@ experiment_grid = []
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
     "model_type": "HQNN",
-    "run_id_prefix": "hqnn_basic_mlp",
+    "run_id_prefix": "hqnn_strong_mlp",
     "model_class": "MLP",
     "activation": nn.Tanh(),
     "lr": 2e-3,
     "epochs": 15000,
-    'entangler': 'basic'
+    'entangler': 'strong'
 }
 
 
