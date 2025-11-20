@@ -15,6 +15,7 @@ from optimize.option_princing import BlackScholeOptimizer
 from method.nn import MLP, ResNet
 from method.hnn import HybridCQN 
 from method.qnn import QuantumNeuralNetwork, CorrelatorQuantumNeuralNetwork
+from utils.save import *
 
 # =============================================================================
 # FUNÇÕES AUXILIARES
@@ -75,11 +76,12 @@ def pretty_print(config_list, num_to_show=5):
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
-"""
+
+device = 'cpu'
 
 base_seed_test = {
     "model_type": "CQNN",
-    "run_id_prefix": "cqnn_basic",
+    "run_id_prefix": "cqnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
@@ -88,25 +90,26 @@ base_seed_test = {
 }
 
 sweep_seed = {
-    "n_qubits": [7],
-    "k": [2],
-    "n_vertex": [1],
-    "n_layers": [2],
-    "seed": [1924]
+    "n_qubits": [4],
+    "k": [2, 3],
+    "n_vertex": [7],
+    "n_layers": [1, 2, 3, 5],
+    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
 
+"""
 sweep_seed = {
     "n_qubits": [7],
     "k": [2, 3],
     "n_vertex": [10, 20, 30, 35],
     "n_layers": [1, 2, 3, 5],
-    "seed": [1924, 1925, 1926]
+    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
 
 
-"""
+
 device = 'gpu'
 sweep_seed = {
     "n_qubits": [7],
@@ -123,7 +126,7 @@ base_seed_test = {
     "activation": None, #nn.Tanh(),
     'entangler': 'strong'
 }
-
+"""
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
@@ -179,8 +182,12 @@ print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     
     run_id = config["run_id"]
+    model_type = config["model_type"]
+    summary_path = resolve_summary_path(model_type)
     print(f"\n--- Iniciando Run: {run_id} ---")
-    # Checagem: se já foi feito, pula
+    if run_already_done(run_id, summary_path=summary_path, model_dir=MODELS_DIR, loss_dir=LOSS_DIR):
+        print(f"Pulando run '{run_id}' — já encontrada em sumário/artefatos.")
+        continue
     # --- A. Garantir Reprodutibilidade (Aceita loop de seed) ---
     seed = config.get('seed', 42)
     tc.manual_seed(seed)
@@ -189,7 +196,7 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     # --- B. Criar o Modelo (Fábrica de Modelos) ---
     model_type = config["model_type"]
     model = None
-    summary_path = None 
+    #summary_path = None 
 
     try:
         if model_type == "MLP":
