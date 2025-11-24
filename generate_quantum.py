@@ -78,7 +78,6 @@ experiment_grid = []
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 
 device = 'cpu'
-
 base_seed_test = {
     "model_type": "CQNN",
     "run_id_prefix": "cqnn_basic",
@@ -102,8 +101,8 @@ sweep_seed = {
 """
 
 sweep_seed = {
-    "n_qubits": [3, 5],
-    "n_layers": [1, 2, 3, 5],
+    "n_qubits": [2, 4],
+    "n_layers": [3],
     #"seed": [1973, 2025, 2024, 2012, 1958, 1962, 1997]
     "seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
