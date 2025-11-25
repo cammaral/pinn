@@ -102,19 +102,19 @@ sweep_seed = {
 """
 
 sweep_seed = {
-    "n_qubits": [2],
-    "n_layers": [3],
+    "n_qubits": [7],
+    "n_layers": [5],
     #"seed": [1973, 2025, 2024, 2012, 1958, 1962, 1997]
-    "seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
+    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997, 1970]
 }
 
 base_seed_test = {
     "model_type": "QNN",
-    "run_id_prefix": "qnn_strong",
+    "run_id_prefix": "qnn_basic",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'strong'
+    'entangler': 'basic'
 }
 
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
