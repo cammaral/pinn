@@ -81,18 +81,18 @@ device = 'cpu'
 """
 base_seed_test = {
     "model_type": "CQNN",
-    "run_id_prefix": "cqnn_basic",
+    "run_id_prefix": "cqnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'basic'
+    'entangler': 'strong'
 
 }
 
 sweep_seed = {
     "n_qubits": [4],
     "k": [2, 3],
-    "n_vertex": [2, 3, 4, 5],
+    "n_vertex": [2, 3, 4, 5, 7],
     #"n_layers": [1, 2, 3, 5],
     "n_layers": [3],
     "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
@@ -101,8 +101,8 @@ sweep_seed = {
 """
 
 sweep_seed = {
-    "n_qubits": [7],
-    "n_layers": [5],
+    "n_qubits": [2, 3, 4 ,5 ,7],
+    "n_layers": [3],
     #"seed": [1973, 2025, 2024, 2012, 1958, 1962, 1997]
     "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
 }
