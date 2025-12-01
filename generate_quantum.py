@@ -77,13 +77,8 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 
-<<<<<<< HEAD
 device = 'cpu'
-
-=======
-device = 'gpu'
 """
->>>>>>> 12c197290ce6c075c836b4360b8a7807623b08f8
 base_seed_test = {
     "model_type": "CQNN",
     "run_id_prefix": "cqnn_basic",
@@ -114,13 +109,13 @@ sweep_seed = {
 
 base_seed_test = {
     "model_type": "QNN",
-    "run_id_prefix": "qnn_strong",
+    "run_id_prefix": "qnn_basic",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'strong'
+    'entangler': 'basic'
 }
-"""
+
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
