@@ -82,11 +82,12 @@ base_seed_test = {
     "epochs": 15000,
     "activation": nn.Tanh()
 }
+
 sweep_seed = {
-    "hidden": [10, 15, 20],
-    "blocks": [1, 2, 3, 5],
-    "seed": [1900, 1905, 1924, 1925, 1926]
-    #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
+    "hidden": [1, 3, 5, 10],
+    "blocks": [1, 3, 5, 10],
+    #"seed": [1924, 1925, 1926]
+    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
 }
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
