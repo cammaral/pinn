@@ -109,11 +109,11 @@ sweep_seed = {
 
 base_seed_test = {
     "model_type": "QNN",
-    "run_id_prefix": "qnn_basic",
+    "run_id_prefix": "qnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'basic'
+    'entangler': 'strong'
 }
 """
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
