@@ -78,14 +78,14 @@ experiment_grid = []
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 
 device = 'cpu'
-"""
+
 base_seed_test = {
     "model_type": "CQNN",
-    "run_id_prefix": "cqnn_basic",
+    "run_id_prefix": "cqnn_strong",
     "lr": 2e-3,
     "epochs": 15000,
     "activation": None, #nn.Tanh(),
-    'entangler': 'basic'
+    'entangler': 'strong'
 
 }
 
@@ -115,7 +115,7 @@ base_seed_test = {
     "activation": None, #nn.Tanh(),
     'entangler': 'basic'
 }
-
+"""
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
 
