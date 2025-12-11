@@ -7,6 +7,7 @@ from tqdm import tqdm
 import time
 import json
 import itertools
+from math import comb
 
 # --- Importe suas classes ---
 # (Assumindo que estão no PYTHONPATH ou na mesma pasta)
@@ -91,10 +92,11 @@ base_seed_test = {
 
 sweep_seed = {
     "n_qubits": [4],
-    "k": [2, 3],
-    "n_vertex": [2, 3, 4, 5, 7],
+    "k": [1, 2, 3, 4, 5, 6],
+    "n_vertex": np.arange(4, 19, 2).tolist(),
     #"n_layers": [1, 2, 3, 5],
     "n_layers": [1, 3, 5],
+    
     "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
 }
 
@@ -169,19 +171,35 @@ print(f"Resultados clássicos serão salvos em: {SUMMARY_CLASSIC_PATH}")
 print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
-    
     run_id = config["run_id"]
     model_type = config["model_type"]
     summary_path = resolve_summary_path(model_type)
     print(f"\n--- Iniciando Run: {run_id} ---")
-    if run_already_done(run_id, summary_path=summary_path, model_dir=MODELS_DIR, loss_dir=LOSS_DIR):
+
+    # 1) k > n_qubits
+    if config["k"] > config["n_qubits"]:
+        print(f"Pulando run '{run_id}': k={config['k']} > n_qubits={config['n_qubits']}")
+        continue
+
+    # 2) n_vertex maior que número máximo de correladores possíveis
+    max_vertices = 3 * comb(config["n_qubits"], config["k"])
+    if config["n_vertex"] > max_vertices:
+        print(
+            f"Pulando run '{run_id}': n_vertex={config['n_vertex']} "
+            f"> máximo possível {max_vertices} para n={config['n_qubits']}, k={config['k']}."
+        )
+        continue
+
+    # 3) pular runs já feitas
+    if run_already_done(run_id, summary_path=summary_path,
+                        model_dir=MODELS_DIR, loss_dir=LOSS_DIR):
         print(f"Pulando run '{run_id}' — já encontrada em sumário/artefatos.")
         continue
     # --- A. Garantir Reprodutibilidade (Aceita loop de seed) ---
     seed = config.get('seed', 42)
     tc.manual_seed(seed)
     np.random.seed(seed)
-
+    
     # --- B. Criar o Modelo (Fábrica de Modelos) ---
     model_type = config["model_type"]
     model = None

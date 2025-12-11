@@ -79,22 +79,22 @@ experiment_grid = []
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
     "model_type": "HQNN",
-    "run_id_prefix": "hqnn_basic_mlp",
+    "run_id_prefix": "hqnn_strong_mlp",
     "model_class": "MLP",
     "activation": nn.Tanh(),
     "lr": 2e-3,
     "epochs": 15000,
-    'entangler': 'basic'
+    'entangler': 'strong'
 }
 
 
 sweep_seed = {
-    "hidden": [1, 3, 5],
+    "hidden": [3],
     "blocks": [1, 3, 5],
-    "n_qubits": [2, 3, 4, 5 , 7],
-    "n_layers": [1, 2, 3, 5],
+    "n_qubits": [5],
+    "n_layers": [1, 3, 5],
     #"seed": [1924, 1925, 1926]
-    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
+    "seed": [1924, 1925, 1926, 1973, 2024]# 2025, 2012, 1958, 1962, 1997]
 }
 
 
