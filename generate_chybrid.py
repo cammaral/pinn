@@ -73,32 +73,33 @@ def pretty_print(config_list, num_to_show=5):
 # =============================================================================
 
 # Lista final que será usada pelo script
-device = 'cpu'
+device = 'cuda'
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 base_seed_test = {
     "model_type": "HCQNN",
-    "run_id_prefix": "hcqnn_basic_mlp",
+    "run_id_prefix": "hcqnn_strong_mlp",
     "model_class": "MLP",
     "activation": nn.Tanh(),
     "lr": 2e-3,
     "epochs": 15000,
-    'entangler': 'basic'
+    'entangler': 'strong'
 }
 
 
 
 sweep_seed = {
-    "hidden": [3, 5],
-    "blocks": [1, 3],
+    "hidden": [2, 3, 5],
+    "blocks": [1, 3, 5],
     "n_qubits": [4],
-    "k": [2, 3],
-    "n_vertex": [5, 8, 12],
-    "n_layers": [2, 3, 5],
-    "seed": [1924, 1925, 1926]
+    "k": [2],
+    "n_vertex": [9, 7, 5],
+    "n_layers": [3, 2, 1],
+    "seed": [1924, 1925, 1926, 1973,  2024]#, 2025, 2012, 1958, 1962, 1997]
     #"seed": [1958, 1962, 1970, 1994, 2002, 1900, 1905, 1924, 1925, 1926]
 }
+
 
 experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 

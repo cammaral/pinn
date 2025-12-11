@@ -73,7 +73,7 @@ def pretty_print(config_list, num_to_show=5):
 # =============================================================================
 
 # Lista final que será usada pelo script
-device = 'cpu'
+device = 'cuda'
 experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
@@ -89,12 +89,21 @@ base_seed_test = {
 
 
 sweep_seed = {
+<<<<<<< HEAD
     "hidden": [3],
     "blocks": [1, 3, 5],
     "n_qubits": [5],
     "n_layers": [1, 3, 5],
     #"seed": [1924, 1925, 1926]
     "seed": [1924, 1925, 1926, 1973, 2024]# 2025, 2012, 1958, 1962, 1997]
+=======
+    "hidden": [5, 3, 2],
+    "blocks": [5, 3, 1],
+    "n_qubits": [5],
+    "n_layers": [1 , 3 , 5],
+    #"seed": [1924, 1925, 1926]
+    "seed": [1924, 1925, 1926, 1973, 2024]#2025, 2024], 2012, 1958, 1962, 1997]
+>>>>>>> 1cc17f09f655236dde0efbb5413f074040ee9741
 }
 
 

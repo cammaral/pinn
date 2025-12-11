@@ -15,6 +15,7 @@ from optimize.option_princing import BlackScholeOptimizer
 from method.nn import MLP, ResNet
 from method.hnn import HybridCQN 
 from method.qnn import QuantumNeuralNetwork
+from utils.save import *
 
 # =============================================================================
 # FUNÇÕES AUXILIARES
@@ -84,8 +85,8 @@ base_seed_test = {
 }
 
 sweep_seed = {
-    "hidden": [1, 3, 5, 10],
-    "blocks": [1, 3, 5, 10],
+    "hidden": [2, 3, 4, 5, 7],
+    "blocks": [2, 3, 4, 5, 7],
     #"seed": [1924, 1925, 1926]
     "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
 }
@@ -148,8 +149,13 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     # --- B. Criar o Modelo (Fábrica de Modelos) ---
     model_type = config["model_type"]
     model = None
-    summary_path = None 
 
+    summary_path = resolve_summary_path(model_type)
+
+    # >>> VERIFICADOR: pula se já foi executada <<<
+    if run_already_done(run_id, summary_path=summary_path, model_dir=MODELS_DIR, loss_dir=LOSS_DIR):
+        print(f"Pulando run '{run_id}' — já encontrada em sumário/artefatos.")
+        continue
     try:
         if model_type == "MLP":
             # <<< CORREÇÃO AQUI >>> (Estava usando 'hidden' e 'blocks' por engano)
