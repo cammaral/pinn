@@ -152,22 +152,29 @@ class CorrelatorQuantumSequentialNetwork(nn.Module):
 
 class QuantumNeuralNetwork(nn.Module):
     def __init__(self, n_qubits=4, n_layers=2, output_dim=1, entangler='basic',
-                 device: str = "auto", dtype=tc.float32):
+                 device: str = "auto", diff_method=None, dtype=tc.float32):
         super().__init__()
         self.n_qubits = n_qubits
         self.n_layers = n_layers
         self.n_vertex = n_qubits #Just to keep compatibility
         self.entangler = entangler
-
         # ===== NOVO: escolher backend PL e torch device/dtype =====
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
-        pl_backend = pick_pl_backend(device)
-        #dev = qml.device(pl_backend, wires=n_qubits)
-        #dev = qml.device("lightning.qubit", wires=n_qubits)
-        dev = qml.device("default.qubit", wires=n_qubits)
+        self.pl_backend = 'default.qubit'#pick_pl_backend(device)
+        self.diff_method = diff_method if diff_method is not None else pick_diff_method(self.pl_backend)
         # ==========================================================
-        @qml.qnode(dev, interface="torch", diff_method='backprop')
+        #
+        # build qnode and TorchLayer
+        #
+        # ===== MODIFICADO: usar backend PL escolhido =====
+        #
+        #batch_obs = False#True if self._torch_device == 'cuda' else False
+        dev = qml.device(self.pl_backend, wires=n_qubits)#, batch_obs=batch_obs)
+        #dev = qml.device("lightning.qubit", wires=n_qubits)
+        #dev = qml.device("default.qubit", wires=n_qubits)
+        # ==========================================================
+        @qml.qnode(dev, interface="torch", diff_method=self.diff_method)
         #@qml.qnode(dev, interface="torch", diff_method='adjoint')
         def circuit(inputs, weights):
             qml.AngleEmbedding(inputs, wires=range(n_qubits))

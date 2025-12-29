@@ -17,3 +17,8 @@ def pick_pl_backend(device_pref: str = "auto"):
     if d == "auto" and tc.cuda.is_available():
         return "lightning.gpu"
     return "default.qubit"
+
+def pick_diff_method(device_pref: str = "auto"):
+    if device_pref == "lightning.gpu":
+        return 'adjoint'
+    return 'backprop'
