@@ -198,19 +198,27 @@ class BlackScholeOptimizer:
         else:
             return loss
 
-    def test(self, data, S_max=160, T=1.0, V_max=140, normalize=True, return_unormalized=False):
+    def test(self, data, S_max=160, T=1.0, V_max=140, normalize=True, return_unormalized=False, data_new = False):
         if not normalize:
             S_max = 1
             T = 1
             V_max = 1
 
         # ======= AJUSTE: tensors no device/dtype =======
-        _S_test = convert_to_tensor(data['domain'][0] / S_max, requires_grad=False,
-                                    device=self.device, dtype=self.dtype)
-        _t_test = convert_to_tensor(data['domain'][1] / T,   requires_grad=False,
-                                    device=self.device, dtype=self.dtype)
-        _V_test = convert_to_tensor(data['domain'][2] / V_max, requires_grad=False,
-                                    device=self.device, dtype=self.dtype)
+        if data_new:
+            _S_test = convert_to_tensor(data[0] / S_max, requires_grad=False,
+                                        device=self.device, dtype=self.dtype).reshape(-1,1)
+            _t_test = convert_to_tensor(data[1] / T,   requires_grad=False,
+                                        device=self.device, dtype=self.dtype).reshape(-1,1)
+            _V_test = convert_to_tensor(data[2] / V_max, requires_grad=False,
+                                        device=self.device, dtype=self.dtype).reshape(-1,1)
+        else:
+            _S_test = convert_to_tensor(data['domain'][0] / S_max, requires_grad=False,
+                                        device=self.device, dtype=self.dtype)
+            _t_test = convert_to_tensor(data['domain'][1] / T,   requires_grad=False,
+                                        device=self.device, dtype=self.dtype)
+            _V_test = convert_to_tensor(data['domain'][2] / V_max, requires_grad=False,
+                                        device=self.device, dtype=self.dtype)
         # ===============================================
 
         self.model.eval()

@@ -53,34 +53,67 @@ class BlackScholes:
         else:
             raise ValueError("option_type must be 'call' or 'put'")
 
-    def generate_data(self, N_domain=1000, N_boundary=1000, N_terminal=1000, seed=1924):
+    def generate_data(
+        self,
+        N_domain=1000,
+        N_boundary=1000,
+        N_terminal=1000,
+        seed=1924,
+        data_new=False,
+        Nx=1000,
+        Nt=1000,
+    ):
         np.random.seed(seed)
 
-        # Domain samples
-        S_domain = np.random.uniform(0, self.S_max, (int(N_domain), 1))
-        t_domain = np.random.uniform(0, self.T, (int(N_domain), 1))
-        V_domain = self.V(S_domain, t_domain)
+        # =========================
+        # DOMAIN
+        # =========================
+        if data_new:
+            # --- Amostragem aleatória (como estava)
+            S_domain = np.random.uniform(0, self.S_max, (int(N_domain), 1))
+            t_domain = np.random.uniform(0, self.T, (int(N_domain), 1))
+            V_domain = self.V(S_domain, t_domain)
+            data = [S_domain, t_domain, V_domain]
+        else:
+            # --- Grid estruturado (para plot)
+            S_lin = np.linspace(0, self.S_max, Nx)
+            t_lin = np.linspace(0, self.T, Nt)
 
-        # Terminal condition (payoff)
-        S_terminal = np.random.uniform(0, self.S_max, (N_terminal, 1))
-        t_terminal = self.T * np.ones((N_terminal, 1))
-        V_terminal = self.V(S_terminal, t_terminal)
+            S_mesh, t_mesh = np.meshgrid(S_lin, t_lin, indexing="ij")
 
-        # Boundary conditions
-        S_boundary_0 = np.zeros((N_boundary // 2, 1))
-        t_boundary_0 = np.random.uniform(0, self.T, (N_boundary // 2, 1))
-        V_boundary_0 = self.V(S_boundary_0, t_boundary_0)
+            # Flatten para manter compatibilidade com PINN
+            S_domain = S_mesh.reshape(-1, 1)
+            t_domain = t_mesh.reshape(-1, 1)
+            V_domain = self.V(S_domain, t_domain)
 
-        S_boundary_max = self.S_max * np.ones((N_boundary // 2, 1))
-        t_boundary_max = np.random.uniform(0, self.T, (N_boundary // 2, 1))
-        V_boundary_max = self.V(S_boundary_max, t_boundary_max)
+            # =========================
+            # TERMINAL CONDITION
+            # =========================
+            S_terminal = np.random.uniform(0, self.S_max, (N_terminal, 1))
+            t_terminal = self.T * np.ones((N_terminal, 1))
+            V_terminal = self.V(S_terminal, t_terminal)
 
-        return {
-            'domain': (S_domain, t_domain, V_domain),
-            'terminal': (S_terminal, t_terminal, V_terminal),
-            'bmax': (S_boundary_max, t_boundary_max, V_boundary_max),
-            'b0': (S_boundary_0, t_boundary_0, V_boundary_0)
-        }
+            # =========================
+            # BOUNDARY CONDITIONS
+            # =========================
+            S_boundary_0 = np.zeros((N_boundary // 2, 1))
+            t_boundary_0 = np.random.uniform(0, self.T, (N_boundary // 2, 1))
+            V_boundary_0 = self.V(S_boundary_0, t_boundary_0)
+
+            S_boundary_max = self.S_max * np.ones((N_boundary // 2, 1))
+            t_boundary_max = np.random.uniform(0, self.T, (N_boundary // 2, 1))
+            V_boundary_max = self.V(S_boundary_max, t_boundary_max)
+
+            data = {
+                'domain': (S_domain, t_domain, V_domain),
+                'terminal': (S_terminal, t_terminal, V_terminal),
+                'bmax': (S_boundary_max, t_boundary_max, V_boundary_max),
+                'b0': (S_boundary_0, t_boundary_0, V_boundary_0)
+            }
+
+
+        return data
+
 
 
 

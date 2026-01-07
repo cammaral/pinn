@@ -78,22 +78,22 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 
-device = 'cuda'
+device = 'cpu'
 
 base_seed_test = {
     "model_type": "CQNN",
     "run_id_prefix": "cqnn_strong",
     "lr": 2e-3,
-    "epochs": 10000, #normal - 15.000
+    "epochs": 15000, #normal - 15.000
     "activation": None, #nn.Tanh(),
     'entangler': 'strong'
 
 }
 
 sweep_seed = {
-    "n_qubits": [7],
-    "k": [3, 4],
-    "n_vertex": [105],#[4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "n_qubits": [4],
+    "k": [1,2],
+    "n_vertex": [12, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
     #"n_layers": [1, 2, 3, 5],
     "n_layers": [5],
     
