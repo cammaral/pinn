@@ -240,7 +240,6 @@ class BlackScholeOptimizer:
             'boundary_0_loss': [],
             'boundary_max_loss': []
         }
-
         if not normalize:
             S_max = 1
             T = 1
