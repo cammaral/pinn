@@ -78,11 +78,11 @@ experiment_grid = []
 
 # --- GRUPO 4: Testando efeito da Seed (Estabilidade) ---
 
-device = 'cpu'
+device = 'cuda'
 
 base_seed_test = {
-    "model_type": "CQNN",
-    "run_id_prefix": "cqnn_strong",
+    "model_type": "QNN",
+    "run_id_prefix": "qnn_strong",
     "lr": 2e-3,
     "epochs": 15000, #normal - 15.000
     "activation": None, #nn.Tanh(),
@@ -91,11 +91,11 @@ base_seed_test = {
 }
 
 sweep_seed = {
-    "n_qubits": [7],
-    "k": [5, 2],
-    "n_vertex": [63, 30, 10],
-    #"n_layers": [1, 2, 3, 5],
+    "n_qubits": [4],
+    #"k": [5, 2],
+    #"n_vertex": [63, 30, 10],
     "n_layers": [1, 3, 5],
+
     
     "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
 }
@@ -167,8 +167,6 @@ data_teste = bse.generate_data(seed=42)
 # 3. LOOP DE TREINAMENTO E AVALIAÇÃO (MODIFICADO)
 # =============================================================================
 print(f"Iniciando {len(experiment_grid)} experimentos...")
-print(f"Resultados clássicos serão salvos em: {SUMMARY_CLASSIC_PATH}")
-print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     run_id = config["run_id"]
@@ -177,18 +175,19 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     print(f"\n--- Iniciando Run: {run_id} ---")
 
     # 1) k > n_qubits
-    if config["k"] > config["n_qubits"]:
-        print(f"Pulando run '{run_id}': k={config['k']} > n_qubits={config['n_qubits']}")
-        continue
+    if config["model_type"]=="CQNN":
+        if config["k"] > config["n_qubits"]:
+            print(f"Pulando run '{run_id}': k={config['k']} > n_qubits={config['n_qubits']}")
+            continue
 
-    # 2) n_vertex maior que número máximo de correladores possíveis
-    max_vertices = 3 * comb(config["n_qubits"], config["k"])
-    if config["n_vertex"] > max_vertices:
-        print(
-            f"Pulando run '{run_id}': n_vertex={config['n_vertex']} "
-            f"> máximo possível {max_vertices} para n={config['n_qubits']}, k={config['k']}."
-        )
-        continue
+        # 2) n_vertex maior que número máximo de correladores possíveis
+        max_vertices = 3 * comb(config["n_qubits"], config["k"])
+        if config["n_vertex"] > max_vertices:
+            print(
+                f"Pulando run '{run_id}': n_vertex={config['n_vertex']} "
+                f"> máximo possível {max_vertices} para n={config['n_qubits']}, k={config['k']}."
+            )
+            continue
 
     # 3) pular runs já feitas
     if run_already_done(run_id, summary_path=summary_path,
