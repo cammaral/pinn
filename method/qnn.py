@@ -1,158 +1,206 @@
 import pennylane as qml
+import torch as tc
 import torch.nn as nn
 from pennylane.qnn import TorchLayer
-import torch as tc
 from itertools import combinations
+from circuits.generate import make_ansatz
 from utils.device import *
 
 
+# =========================================================
+# FUNÇÃO EXTERNA: GERA APENAS A ESTRUTURA DO CIRCUITO
+# =========================================================
+
+def get_weight_shapes(circuit_type, n_layers, n_qubits):
+    if circuit_type == "basic":
+        return {"weights": (n_layers, n_qubits)}
+    elif circuit_type == "strong":
+        return {"weights": (n_layers, n_qubits, 3)}
+    else:
+        raise ValueError(f"circuit_type desconhecido: {circuit_type}")
+
+
+# =========================================================
+# QNN PADRÃO
+# =========================================================
+
 class QuantumNeuralNetwork(nn.Module):
-    def __init__(self, n_qubits=4, n_layers=2, output_dim=1, entangler='basic',
-                 device: str = "auto", diff_method=None, dtype=tc.float32):
+    def __init__(
+        self,
+        n_qubits=4,
+        n_layers=2,
+        output_dim=1,
+        ansatz_fn=None,
+        circuit_type="basic",
+        device: str = "auto",
+        diff_method=None,
+        dtype=tc.float32,
+    ):
         super().__init__()
+
         self.n_qubits = n_qubits
         self.n_layers = n_layers
-        self.n_vertex = n_qubits #Just to keep compatibility
-        self.entangler = entangler
-        # ===== NOVO: escolher backend PL e torch device/dtype =====
+        self.n_output = n_qubits   # compatibilidade
+        self.output_dim = output_dim
+
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
-        self.pl_backend = 'default.qubit'#pick_pl_backend(device)
+        self.pl_backend = pick_pl_backend(device)
         self.diff_method = diff_method if diff_method is not None else pick_diff_method(self.pl_backend)
-        # ==========================================================
-        #
-        # build qnode and TorchLayer
-        #
-        # ===== MODIFICADO: usar backend PL escolhido =====
-        #
-        #batch_obs = False#True if self._torch_device == 'cuda' else False
-        dev = qml.device(self.pl_backend, wires=n_qubits)#, batch_obs=batch_obs)
-        #dev = qml.device("lightning.qubit", wires=n_qubits)
-        #dev = qml.device("default.qubit", wires=n_qubits)
-        # ==========================================================
+
+        self.circuit_type = circuit_type
+        self.ansatz_fn = ansatz_fn if ansatz_fn is not None else make_ansatz(circuit_type)
+
+        dev = qml.device(self.pl_backend, wires=n_qubits)
+
         @qml.qnode(dev, interface="torch", diff_method=self.diff_method)
-        #@qml.qnode(dev, interface="torch", diff_method='adjoint')
         def circuit(inputs, weights):
             qml.AngleEmbedding(inputs, wires=range(n_qubits))
-            if self.entangler == 'basic':
-                qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-            elif self.entangler == 'strong':
-                qml.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+            self.ansatz_fn(weights, n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        if self.entangler == 'basic':
-            weight_shapes = {"weights": (self.n_layers, self.n_qubits)}
-        elif self.entangler == 'strong':
-            weight_shapes = {"weights": (self.n_layers, self.n_qubits, 3)}
+        weight_shapes = get_weight_shapes(self.circuit_type, self.n_layers, self.n_qubits)
         self.q_layer = TorchLayer(circuit, weight_shapes)
 
-        # ===== NOVO: mover módulo para device/dtype =====
         self.to(self._torch_device, dtype=self._dtype)
-        # =================================================
 
     def forward(self, x):
         x = self.q_layer(x)
         return x
 
 
+# =========================================================
+# QNN SEQUENCIAL
+# =========================================================
 
 class QuantumSequentialNetwork(nn.Module):
-    def __init__(self, n_qubits=4, n_layers=2, MK=1,
-                 device: str = "auto", dtype=tc.float32):
+    def __init__(
+        self,
+        n_qubits=4,
+        n_layers=2,
+        MK=1,
+        ansatz_fn=None,
+        circuit_type="basic",
+        device: str = "auto",
+        dtype=tc.float32,
+    ):
         super().__init__()
-        # ===== NOVO: armazenar device/dtype e repassar aos blocos =====
+
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
-        # ==============================================================
+
         self.blocks = nn.ModuleList([
-            QuantumNeuralNetwork(n_qubits=n_qubits, n_layers=n_layers,
-                                 device=device, dtype=dtype)
+            QuantumNeuralNetwork(
+                n_qubits=n_qubits,
+                n_layers=n_layers,
+                ansatz_fn=ansatz_fn,
+                circuit_type=circuit_type,
+                device=device,
+                dtype=dtype,
+            )
             for _ in range(MK)
         ])
-        # ===== NOVO: mover módulo p/ device/dtype =====
+
         self.to(self._torch_device, dtype=self._dtype)
 
     def forward(self, x):
         for block in self.blocks:
             x = block(x)
-        # x.shape = [batch_size, n_qubits]
-        return x # output shape: [batch_size, 1]
+        return x
 
+
+# =========================================================
+# GERADOR DOS OBSERVÁVEIS CORRELACIONADOS
+# =========================================================
+
+def generate_pauli_obs_list(n_qubits, k, n_vertex):
+    pauli_list = []
+    positions = list(range(n_qubits))
+
+    for pauli_char in ["Z", "Y", "X"]:
+        for combo in combinations(positions, k):
+            pauli_str = ["I"] * n_qubits
+            for idx in combo:
+                pauli_str[idx] = pauli_char
+
+            obs = None
+            for idx, p in enumerate(pauli_str):
+                if p == "I":
+                    continue
+                elif p == "X":
+                    current = qml.PauliX(idx)
+                elif p == "Y":
+                    current = qml.PauliY(idx)
+                elif p == "Z":
+                    current = qml.PauliZ(idx)
+
+                if obs is None:
+                    obs = current
+                else:
+                    obs = obs @ current
+
+            if obs is None:
+                obs = qml.Identity(0)
+
+            pauli_list.append(obs)
+
+            if len(pauli_list) == n_vertex:
+                return pauli_list
+
+    return pauli_list
+
+
+# =========================================================
+# QNN COM CORRELATORES
+# =========================================================
 
 class CorrelatorQuantumNeuralNetwork(nn.Module):
-    def __init__(self, n_qubits=4, n_layers=2, k=2, n_vertex=9, nonlinear=True, entangler='basic',
-                 device: str = "auto", dtype=tc.float32):
+    def __init__(
+        self,
+        n_qubits=4,
+        n_layers=2,
+        k=2,
+        n_vertex=9,
+        nonlinear=None,
+        ansatz_fn=None,
+        circuit_type="basic",
+        device: str = "auto",
+        diff_method=None,
+        dtype=tc.float32,
+    ):
         super().__init__()
+
         self.n_qubits = n_qubits
         self.n_layers = n_layers
         self.k = k
         self.n_vertex = n_vertex
-        self.obs_list = self._generate_obs_list()
-        self.alpha = 1.5*self.n_qubits
-        self.nonlinear = nn.Tanh()
-        self.entangler = entangler
+        self.n_output = n_vertex
 
-        # ===== NOVO: device/dtype + backend PL =====
+        self.obs_list = generate_pauli_obs_list(n_qubits, k, n_vertex)
+
+        self.alpha = 1.5 * self.n_qubits
+        self.nonlinear = nn.Tanh() if nonlinear else None
+
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
-        pl_backend = pick_pl_backend(device)
-        #dev = qml.device(pl_backend, wires=n_qubits)
-        #dev = qml.device("lightning.qubit", wires=n_qubits)
-        dev = qml.device("default.qubit", wires=n_qubits)
-        # ==========================================================
-        @qml.qnode(dev, interface="torch", diff_method='backprop')
-        #@qml.qnode(dev, interface="torch", diff_method='adjoint')
+        self.pl_backend = pick_pl_backend(device)
+        self.diff_method = diff_method if diff_method is not None else pick_diff_method(self.pl_backend)
+
+        self.circuit_type = circuit_type
+        self.ansatz_fn = ansatz_fn if ansatz_fn is not None else make_ansatz(circuit_type)
+
+        dev = qml.device(self.pl_backend, wires=n_qubits)
+
+        @qml.qnode(dev, interface="torch", diff_method=self.diff_method)
         def circuit(inputs, weights):
             qml.AngleEmbedding(inputs, wires=range(n_qubits))
-            if self.entangler == 'basic':
-                qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-            elif self.entangler == 'strong':
-                qml.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+            self.ansatz_fn(weights, n_qubits)
             return [qml.expval(obs) for obs in self.obs_list]
 
-        if self.entangler == 'basic':
-            weight_shapes = {"weights": (self.n_layers, self.n_qubits)}
-        elif self.entangler == 'strong':
-            weight_shapes = {"weights": (self.n_layers, self.n_qubits, 3)}
+        weight_shapes = get_weight_shapes(self.circuit_type, self.n_layers, self.n_qubits)
         self.q_layer = TorchLayer(circuit, weight_shapes)
 
-        # ===== NOVO: mover módulo p/ device/dtype =====
         self.to(self._torch_device, dtype=self._dtype)
-
-    def _generate_obs_list(self):
-        pauli_list = []
-        positions = list(range(self.n_qubits))
-        for pauli_char in ["Z", "Y", "X"]:
-            for combo in combinations(positions, self.k):
-                # build pauli string
-                pauli_str = ['I'] * self.n_qubits
-                for idx in combo:
-                    pauli_str[idx] = pauli_char
-
-                obs = None
-                # reverse to maintain indexing convention if needed
-                for idx, p in enumerate(reversed(pauli_str)):
-                    if p == 'I':
-                        continue
-                    elif p == 'X':
-                        current = qml.PauliX(idx)
-                    elif p == 'Y':
-                        current = qml.PauliY(idx)
-                    elif p == 'Z':
-                        current = qml.PauliZ(idx)
-
-                    if obs is None:
-                        obs = current
-                    else:
-                        obs = obs @ current
-
-                if obs is None:
-                    obs = qml.Identity(0)
-
-                pauli_list.append(obs)
-                if len(pauli_list) == self.n_vertex:
-                    return pauli_list
-        return pauli_list
 
     def forward(self, x):
         x = self.q_layer(x)
@@ -161,30 +209,49 @@ class CorrelatorQuantumNeuralNetwork(nn.Module):
         return x
 
 
+# =========================================================
+# QNN SEQUENCIAL COM CORRELATORES
+# =========================================================
 
-# Corrigir a classe CorrelatorQuantumSequentialNetwork
 class CorrelatorQuantumSequentialNetwork(nn.Module):
-    def __init__(self, n_qubits=4, n_layers=2, k=2, n_vertex=9, MK=1,
-                 device: str = "auto", dtype=tc.float32):
+    def __init__(
+        self,
+        n_qubits=4,
+        n_layers=2,
+        k=2,
+        n_vertex=9,
+        MK=1,
+        ansatz_fn=None,
+        circuit_type="basic",
+        device: str = "auto",
+        dtype=tc.float32,
+    ):
         super().__init__()
-        # ===== NOVO: armazenar device/dtype e repassar aos blocos =====
+
         self._torch_device = pick_torch_device(device)
         self._dtype = dtype
-        # ==============================================================
+
         self.blocks = nn.ModuleList([
-            CorrelatorQuantumNeuralNetwork(n_qubits=n_qubits, n_layers=n_layers,
-                                           k=k, n_vertex=n_vertex,
-                                           device=device, dtype=dtype)
+            CorrelatorQuantumNeuralNetwork(
+                n_qubits=n_qubits,
+                n_layers=n_layers,
+                k=k,
+                n_vertex=n_vertex,
+                ansatz_fn=ansatz_fn,
+                circuit_type=circuit_type,
+                device=device,
+                dtype=dtype,
+            )
             for _ in range(MK)
         ])
-        # ===== NOVO: mover módulo p/ device/dtype =====
+
         self.to(self._torch_device, dtype=self._dtype)
 
     def forward(self, x):
         outs = []
         for block in self.blocks:
             outs.append(block(x))
-        # outs: list of tensors shape [batch, n_vertex]
-        stacked = tc.stack(outs, dim=0)  # shape [MK, batch, n_vertex]
+
+        stacked = tc.stack(outs, dim=0)              # [MK, batch, n_vertex]
         mean_over_blocks = tc.mean(stacked, dim=0)  # [batch, n_vertex]
         return mean_over_blocks.mean(dim=1, keepdim=True)  # [batch, 1]

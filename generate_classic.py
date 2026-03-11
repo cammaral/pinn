@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import json
 import time
 import itertools
@@ -18,18 +17,10 @@ from tqdm import tqdm
 # =========================
 from equation.option_pricing import BlackScholes
 from optimize.option_princing import BlackScholeOptimizer
-
 from method.nn import MLP, ResNet
 from method.hnn import HybridCQN
-from method.qnn import QuantumNeuralNetwork, CorrelatorQuantumNeuralNetwork
+from method.qnn import QuantumNeuralNetwork
 
-from utils.save import (
-    RESULTS_DIR,
-    SUMMARY_HYBRID_PATH,
-    SUMMARY_CQUANTUM_PATH,
-    run_already_done,
-    resolve_summary_path,
-)
 
 # =============================================================================
 # CONFIGURAÇÃO GLOBAL
@@ -37,19 +28,18 @@ from utils.save import (
 
 DEVICE = "cuda" if tc.cuda.is_available() else "cpu"
 
-RESULTS_DIR = Path(RESULTS_DIR)
-
+RESULTS_DIR = Path("experimentos_pinn")
 RUNS_DIR = RESULTS_DIR / "runs"
-MODELS_DIR = RESULTS_DIR / "models"
-LOSSES_DIR = RESULTS_DIR / "losses"
-METADATA_DIR = RESULTS_DIR / "metadata"
 
-for d in [RUNS_DIR, MODELS_DIR, LOSSES_DIR, METADATA_DIR]:
+SUMMARY_CLASSIC_PATH = RESULTS_DIR / "sumario_classico.csv"
+SUMMARY_HYBRID_PATH = RESULTS_DIR / "sumario_hibrido.csv"
+
+for d in [RESULTS_DIR, RUNS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 HEADERS_WRITTEN = {
-    str(SUMMARY_HYBRID_PATH): os.path.exists(SUMMARY_HYBRID_PATH),
-    str(SUMMARY_CQUANTUM_PATH): os.path.exists(SUMMARY_CQUANTUM_PATH),
+    str(SUMMARY_CLASSIC_PATH): SUMMARY_CLASSIC_PATH.exists(),
+    str(SUMMARY_HYBRID_PATH): SUMMARY_HYBRID_PATH.exists(),
 }
 
 
@@ -72,46 +62,9 @@ def sanitize_for_json(obj: Any) -> Any:
     return str(obj)
 
 
-def generate_runs(base_config: Dict[str, Any], sweep_params: Dict[str, List[Any]]) -> List[Dict[str, Any]]:
-    """
-    Gera a grade de experimentos a partir de uma configuração base + sweep.
-    """
-    experiments = []
-
-    param_keys = list(sweep_params.keys())
-    param_values = list(sweep_params.values())
-
-    for combination in itertools.product(*param_values):
-        cfg = base_config.copy()
-        run_parts = [base_config.get("run_id_prefix", base_config.get("model_type", "run"))]
-
-        for key, value in zip(param_keys, combination):
-            cfg[key] = value
-
-            if isinstance(value, nn.Module):
-                val_str = value.__class__.__name__
-            else:
-                val_str = str(value)
-
-            short_key = (
-                key.replace("learning_rate", "lr")
-                   .replace("hidden", "h")
-                   .replace("layers", "l")
-                   .replace("blocks", "b")
-            )
-            run_parts.append(f"{short_key}_{val_str}")
-
-        cfg["run_id"] = "_".join(run_parts)
-        experiments.append(cfg)
-
-    return experiments
-
-
-def pretty_print(config_list: List[Dict[str, Any]], num_to_show: int = 5) -> None:
-    for cfg in config_list[:num_to_show]:
-        print(json.dumps(sanitize_for_json(cfg), indent=2, ensure_ascii=False))
-    if len(config_list) > num_to_show:
-        print(f"... e mais {len(config_list) - num_to_show} outros.")
+def save_json(data: Any, path: Path) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(data), f, indent=2, ensure_ascii=False)
 
 
 def set_seed(seed: int) -> None:
@@ -121,12 +74,61 @@ def set_seed(seed: int) -> None:
         tc.cuda.manual_seed_all(seed)
 
 
+def generate_runs(base_config: Dict[str, Any], sweep_params: Dict[str, List[Any]]) -> List[Dict[str, Any]]:
+    """
+    Gera a grade de experimentos a partir de uma configuração base + sweep.
+    """
+    generated_experiments = []
+    param_keys = list(sweep_params.keys())
+    param_values = list(sweep_params.values())
+
+    for combination in itertools.product(*param_values):
+        new_config = base_config.copy()
+        run_id_parts = [base_config.get("run_id_prefix", base_config.get("model_type", "run"))]
+
+        for key, value in zip(param_keys, combination):
+            new_config[key] = value
+
+            if isinstance(value, nn.Module):
+                val_str = value.__class__.__name__
+            else:
+                val_str = str(value)
+
+            key_str = (
+                key.replace("learning_rate", "lr")
+                   .replace("hidden", "h")
+                   .replace("layers", "l")
+                   .replace("blocks", "b")
+            )
+            run_id_parts.append(f"{key_str}_{val_str}")
+
+        new_config["run_id"] = "_".join(run_id_parts)
+        generated_experiments.append(new_config)
+
+    return generated_experiments
+
+
+def pretty_print(config_list: List[Dict[str, Any]], num_to_show: int = 5) -> None:
+    for cfg in config_list[:num_to_show]:
+        print(json.dumps(sanitize_for_json(cfg), indent=2, ensure_ascii=False))
+    if len(config_list) > num_to_show:
+        print(f"... e mais {len(config_list) - num_to_show} outros.")
+
+
+def resolve_summary_path(model_type: str) -> str:
+    if model_type in ["MLP", "ResNet"]:
+        return str(SUMMARY_CLASSIC_PATH)
+    if model_type in ["QPINN"]:
+        return str(SUMMARY_HYBRID_PATH)
+    raise ValueError(f"model_type '{model_type}' não reconhecido.")
+
+
 def get_run_dirs(model_type: str, run_id: str) -> Dict[str, Path]:
     """
-    Estrutura organizada por run:
-      resultados/
+    Estrutura por run:
+      expermientos_pinn/
         runs/
-          HQNN/
+          MLP/
             run_id/
               model/
               losses/
@@ -148,48 +150,60 @@ def get_run_dirs(model_type: str, run_id: str) -> Dict[str, Path]:
     }
 
 
-def build_classical_block(config: Dict[str, Any]):
-    model_class = config.get("model_class", "MLP")
+def run_already_done(run_id: str, model_type: str, summary_path: str) -> bool:
+    """
+    Verifica se a run já foi executada:
+      1) se já existe no CSV
+      2) se já existem os artefatos principais da run
+    """
+    try:
+        csv_path = Path(summary_path)
+        if csv_path.exists():
+            df = pd.read_csv(csv_path)
+            if "run_id" in df.columns and run_id in df["run_id"].astype(str).values:
+                return True
+    except Exception:
+        pass
 
-    if model_class == "MLP":
-        return MLP(
-            hidden=config["hidden"],
-            blocks=config["blocks"],
-            device=DEVICE,
-            activation=config["activation"],
-        )
+    run_root = RUNS_DIR / model_type / run_id
+    model_path = run_root / "model" / "model_state_dict.pth"
+    loss_path = run_root / "losses" / "loss_history_full.json"
+    results_path = run_root / "metadata" / "results.json"
 
-    if model_class == "ResNet":
-        return ResNet(
-            hidden=config["hidden"],
-            blocks=config["blocks"],
-            device=DEVICE,
-            activation=config["activation"],
-        )
-
-    raise ValueError(f"model_class '{model_class}' não reconhecida.")
+    return model_path.exists() and loss_path.exists() and results_path.exists()
 
 
 def build_model(config: Dict[str, Any]):
-    """
-    Mantém apenas modelos híbridos:
-      - HQNN
-      - CQNN / CQNN_nonlinear
-    """
     model_type = config["model_type"]
 
-    if model_type == "HQNN":
+    if model_type == "MLP":
+        model = MLP(
+            hidden=config["hidden"],
+            blocks=config["blocks"],
+            device=DEVICE,
+            activation=config["activation"],
+        )
+        summary_path = str(SUMMARY_CLASSIC_PATH)
+        return model, summary_path
+
+    if model_type == "ResNet":
+        model = ResNet(
+            hidden=config["hidden"],
+            blocks=config["blocks"],
+            device=DEVICE,
+            activation=config["activation"],
+        )
+        summary_path = str(SUMMARY_CLASSIC_PATH)
+        return model, summary_path
+
+    if model_type == "QPINN":
         qnn = QuantumNeuralNetwork(
             n_qubits=config["n_qubits"],
             n_layers=config["n_layers"],
             device=DEVICE,
-            entangler=config.get("entangler"),
         )
-
-        classical_pre = build_classical_block(config)
-
         model = HybridCQN(
-            classical_pre=classical_pre,
+            classical_pre=None,
             qnn_block=qnn,
             classical_post=None,
             device=DEVICE,
@@ -197,57 +211,25 @@ def build_model(config: Dict[str, Any]):
         summary_path = str(SUMMARY_HYBRID_PATH)
         return model, summary_path
 
-    if model_type in ["CQNN", "CQNN_nonlinear"]:
-        qnn = CorrelatorQuantumNeuralNetwork(
-            n_qubits=config["n_qubits"],
-            n_layers=config["n_layers"],
-            k=config["k"],
-            n_vertex=config["n_vertex"],
-            nonlinear=(model_type == "CQNN_nonlinear"),
-            device=DEVICE,
-            entangler=config.get("entangler"),
-        )
-
-        classical_pre = None
-        if config.get("use_classical_pre", False):
-            classical_pre = build_classical_block(config)
-
-        model = HybridCQN(
-            classical_pre=classical_pre,
-            qnn_block=qnn,
-            classical_post=None,
-            device=DEVICE,
-        )
-        summary_path = str(SUMMARY_CQUANTUM_PATH)
-        return model, summary_path
-
-    raise ValueError(f"model_type '{model_type}' não suportado neste script.")
-
-
-def save_json(data: Dict[str, Any], path: Path) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(sanitize_for_json(data), f, indent=2, ensure_ascii=False)
+    raise ValueError(f"Tipo de modelo '{model_type}' não reconhecido.")
 
 
 def extract_loss_metrics(loss_history: Any) -> Dict[str, Any]:
     """
-    Calcula métricas úteis a partir do histórico completo.
-    Espera um dict, por exemplo:
-      {
-        "Total": [...],
-        "PDE": [...],
-        "BC_left": [...],
-        "BC_right": [...],
-        ...
-      }
+    Extrai métricas finais do histórico completo de loss.
+    Funciona se loss_history for dict ou lista.
     """
     metrics = {}
 
     if isinstance(loss_history, dict):
         for key, values in loss_history.items():
             if isinstance(values, list) and len(values) > 0:
-                metrics[f"final_loss_{key.lower()}"] = values[-1]
-                metrics[f"mean_last_100_loss_{key.lower()}"] = float(np.mean(values[-100:]))
+                safe_key = str(key).lower().replace(" ", "_")
+                metrics[f"final_loss_{safe_key}"] = values[-1]
+                metrics[f"mean_last_100_loss_{safe_key}"] = float(np.mean(values[-100:]))
+    elif isinstance(loss_history, list) and len(loss_history) > 0:
+        metrics["final_loss"] = loss_history[-1]
+        metrics["mean_last_100_loss"] = float(np.mean(loss_history[-100:]))
 
     return metrics
 
@@ -278,9 +260,9 @@ def train_and_evaluate(config: Dict[str, Any], data_train, data_test) -> Dict[st
 
     model, summary_path = build_model(config)
 
-    optimizer = BlackScholeOptimizer(
-        data=data_train,
-        model=model,
+    opt = BlackScholeOptimizer(
+        data_train,
+        model,
         epochs=config["epochs"],
         lr=config["lr"],
         device=DEVICE,
@@ -290,17 +272,17 @@ def train_and_evaluate(config: Dict[str, Any], data_train, data_test) -> Dict[st
     start_time = time.time()
 
     # IMPORTANTE:
-    # aqui assumimos que return_all=True faz o optimizer retornar TODAS as losses
-    loss_history = optimizer.train(return_loss=True, return_all=True)
+    # aqui estamos pedindo o histórico completo de losses
+    loss_history = opt.train(return_loss=True, return_all=True)
 
     end_time = time.time()
     training_time_sec = end_time - start_time
 
-    mse_norm, mse_unorm, _ = optimizer.test(data_test, return_unormalized=True)
-    num_params = optimizer.num_params
+    mse_norm, mse_unorm, _ = opt.test(data_test, return_unormalized=True)
+    num_params = opt.num_params
 
     # =========================
-    # SALVAMENTO FINAL DA RUN
+    # SALVAMENTO FINAL
     # =========================
 
     model_path = run_dirs["model_dir"] / "model_state_dict.pth"
@@ -312,12 +294,11 @@ def train_and_evaluate(config: Dict[str, Any], data_train, data_test) -> Dict[st
     config_path = run_dirs["metadata_dir"] / "config.json"
     save_json(config, config_path)
 
-    results_path = run_dirs["metadata_dir"] / "results.json"
-
     results_payload = {
         "run_id": run_id,
         "model_type": model_type,
         "seed": seed,
+        "device": DEVICE,
         "training_time_sec": training_time_sec,
         "num_params": num_params,
         "mse_teste_normalizado": mse_norm,
@@ -327,11 +308,15 @@ def train_and_evaluate(config: Dict[str, Any], data_train, data_test) -> Dict[st
         "config_path": str(config_path),
     }
     results_payload.update(extract_loss_metrics(loss_history))
+
+    results_path = run_dirs["metadata_dir"] / "results.json"
     save_json(results_payload, results_path)
 
-    # linha para CSV de sumário
     log_row = config.copy()
     log_row.update(results_payload)
+
+    if "activation" in log_row:
+        log_row["activation"] = str(log_row["activation"])
 
     return {
         "log_row": log_row,
@@ -340,95 +325,63 @@ def train_and_evaluate(config: Dict[str, Any], data_train, data_test) -> Dict[st
 
 
 # =============================================================================
-# DEFINIÇÃO DOS EXPERIMENTOS
+# 1. DEFINIÇÃO DOS EXPERIMENTOS
 # =============================================================================
 
 experiment_grid: List[Dict[str, Any]] = []
 
-# -------------------------------------------------------------------------
-# EXEMPLO 1: HQNN
-# -------------------------------------------------------------------------
-base_hqnn = {
-    "model_type": "HQNN",
-    "run_id_prefix": "hqnn_strong_mlp",
-    "model_class": "MLP",
-    "activation": nn.Tanh(),
+base_seed_test = {
+    "model_type": "MLP",
+    "run_id_prefix": "mlp",
     "lr": 2e-3,
     "epochs": 15000,
-    "entangler": "strong",
+    "activation": nn.Tanh(),
 }
 
-sweep_hqnn = {
-    "hidden": [2, 3, 5],
-    "blocks": [1, 5, 10],
-    "n_qubits": [2, 3, 4, 5, 7, 10],
-    "n_layers": [1, 3, 5, 10],
-    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997]
+sweep_seed = {
+    "hidden": [2, 3, 5, 10, 20],
+    "blocks": [1, 2, 3, 4, 5, 10, 20],
+    "seed": [1924, 1925, 1926, 1973, 2025, 2024, 2012, 1958, 1962, 1997],
 }
 
-experiment_grid.extend(generate_runs(base_hqnn, sweep_hqnn))
+experiment_grid.extend(generate_runs(base_seed_test, sweep_seed))
 
-# -------------------------------------------------------------------------
-# EXEMPLO 2: CQNN
-# descomente se quiser usar
-# -------------------------------------------------------------------------
-# base_cqnn = {
-#     "model_type": "CQNN_nonlinear",
-#     "run_id_prefix": "cqnn_nonlinear",
-#     "lr": 2e-3,
-#     "epochs": 15000,
-#     "entangler": "strong",
-#     "use_classical_pre": False,
-# }
-#
-# sweep_cqnn = {
-#     "n_qubits": [5],
-#     "n_layers": [4],
-#     "k": [2],
-#     "n_vertex": [5],
-#     "seed": [1924, 1925, 1926],
-# }
-#
-# experiment_grid.extend(generate_runs(base_cqnn, sweep_cqnn))
-
-print(f"Total de {len(experiment_grid)} experimentos gerados.")
+print(f"Total de {len(experiment_grid)} experimentos gerados para a grade.")
 pretty_print(experiment_grid, num_to_show=3)
 
 
 # =============================================================================
-# DADOS
+# 2. GERAÇÃO DE DADOS
 # =============================================================================
 
 print("Gerando dados de treino e teste...")
 bse = BlackScholes(eps=1e-10)
-data_train = bse.generate_data(seed=1234)
-data_test = bse.generate_data(seed=4321)
+data_treino = bse.generate_data(seed=2025)
+data_teste = bse.generate_data(seed=42)
 
 
 # =============================================================================
-# LOOP PRINCIPAL
+# 3. LOOP PRINCIPAL
 # =============================================================================
 
 print(f"Iniciando {len(experiment_grid)} experimentos...")
+print(f"Resultados clássicos serão salvos em: {SUMMARY_CLASSIC_PATH}")
+print(f"Resultados híbridos serão salvos em: {SUMMARY_HYBRID_PATH}")
 
 for config in tqdm(experiment_grid, desc="Total de Experimentos"):
     run_id = config["run_id"]
     model_type = config["model_type"]
 
+    print(f"\n--- Iniciando Run: {run_id} ---")
+
     summary_path = resolve_summary_path(model_type)
 
-    # verificador
-    if run_already_done(
-        run_id,
-        summary_path=summary_path,
-        model_dir=str(MODELS_DIR),
-        loss_dir=str(LOSSES_DIR),
-    ):
+    if run_already_done(run_id, model_type=model_type, summary_path=summary_path):
         print(f"Pulando run '{run_id}' — já encontrada em sumário/artefatos.")
         continue
 
     try:
-        output = train_and_evaluate(config, data_train, data_test)
+        output = train_and_evaluate(config, data_treino, data_teste)
         log_row = output["log_row"]
         summary_path = output["summary_path"]
 
@@ -445,5 +398,10 @@ for config in tqdm(experiment_grid, desc="Total de Experimentos"):
         print(f"ERRO na run '{run_id}': {e}")
         continue
 
+
+# =============================================================================
+# 4. CONCLUSÃO
+# =============================================================================
+
 print("\n--- TODOS OS EXPERIMENTOS CONCLUÍDOS ---")
-print("Os modelos, losses e metadados foram salvos por run.")
+print("Os modelos, losses, metadados e sumários foram salvos por run.")

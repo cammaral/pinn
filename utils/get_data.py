@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch as tc
-import tensorflow as tf
+#import tensorflow as tf
 import yfinance as yf
 from pathlib import Path
 from scipy.stats import norm
@@ -137,14 +137,8 @@ def convert_to_tensor(data, requires_grad=True, dtype="float32", backend="torch"
             device=device,
             requires_grad=requires_grad
         ).reshape(-1, 1)
-
-    elif backend == "tf":
-        data = np.array(data)
-        tensor_dtype = dtype if isinstance(dtype, tf.DType) else getattr(tf, dtype)
-        return tf.convert_to_tensor(data.reshape(-1, 1), dtype=tensor_dtype)
-
     else:
-        raise ValueError("Backend must be either 'torch' or 'tf'")
+        raise ValueError("Backend must be either 'torch'")
 # ======================================================
 # 💾 Data Saving and Loading (Synthetic)
 # ======================================================
