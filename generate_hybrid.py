@@ -183,7 +183,7 @@ def build_model(config: Dict[str, Any]):
             n_qubits=config["n_qubits"],
             n_layers=config["n_layers"],
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
 
         classical_pre = build_classical_block(config)
@@ -205,7 +205,7 @@ def build_model(config: Dict[str, Any]):
             n_vertex=config["n_vertex"],
             nonlinear=(model_type == "CQNN_nonlinear"),
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
 
         classical_pre = None

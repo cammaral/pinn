@@ -232,7 +232,7 @@ def build_model(config: Dict[str, Any]):
             n_qubits=config["n_qubits"],
             n_layers=config["n_layers"],
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
         model = HybridCQN(
             classical_pre=None,
@@ -247,7 +247,7 @@ def build_model(config: Dict[str, Any]):
             n_qubits=config["n_qubits"],
             n_layers=config["n_layers"],
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
         model = HybridCQN(
             classical_pre=None,
@@ -265,7 +265,7 @@ def build_model(config: Dict[str, Any]):
             n_vertex=config["n_vertex"],
             nonlinear=False,
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
         model = HybridCQN(
             classical_pre=None,
@@ -283,7 +283,7 @@ def build_model(config: Dict[str, Any]):
             n_vertex=config["n_vertex"],
             nonlinear=True,
             device=DEVICE,
-            entangler=config.get("entangler"),
+            circuit_type=config.get("entangler"),
         )
         model = HybridCQN(
             classical_pre=None,
