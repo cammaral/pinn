@@ -1,0 +1,43 @@
+# ==========================================
+# Dados e Resultados de Experimentos
+# ==========================================
+# Ignora pastas de dados pesados e execuções de rede neural/quântica
+/data/
+/experimentos_pinn/
+/backup/
+/trash/
+
+# ==========================================
+# Logs
+# ==========================================
+*.log
+
+# ==========================================
+# Arquivos Compactados
+# ==========================================
+*.zip
+*.tar.gz
+*.rar
+
+# ==========================================
+# Python / Jupyter Padrão (Essencial)
+# ==========================================
+# Cache do interpretador
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Checkpoints de Notebooks (para o testes.ipynb)
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+
+# ==========================================
+# Sistema Operacional (Opcional)
+# ==========================================
+.DS_Store
+Thumbs.db
