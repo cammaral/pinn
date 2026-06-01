@@ -1,43 +1,194 @@
-# ==========================================
-# Dados e Resultados de Experimentos
-# ==========================================
-# Ignora pastas de dados pesados e execuções de rede neural/quântica
-/data/
-/experimentos_pinn/
-/backup/
-/trash/
+# ============================================================
+# Python
+# ============================================================
 
-# ==========================================
-# Logs
-# ==========================================
-*.log
-
-# ==========================================
-# Arquivos Compactados
-# ==========================================
-*.zip
-*.tar.gz
-*.rar
-
-# ==========================================
-# Python / Jupyter Padrão (Essencial)
-# ==========================================
-# Cache do interpretador
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+site/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Checkpoints de Notebooks (para o testes.ipynb)
-.ipynb_checkpoints/
-*/.ipynb_checkpoints/
+# ============================================================
+# Virtual environments
+# ============================================================
 
-# Ambientes Virtuais
+.venv/
 venv/
 env/
-.venv/
+ENV/
+.conda/
+conda/
+pip-wheel-metadata/
 
-# ==========================================
-# Sistema Operacional (Opcional)
-# ==========================================
+# ============================================================
+# Jupyter / notebooks
+# ============================================================
+
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Keep notebooks, but ignore notebook checkpoints only.
+# If you want to ignore all notebooks, uncomment:
+# *.ipynb
+
+# ============================================================
+# IDEs / editors
+# ============================================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# ============================================================
+# Environment / secrets
+# ============================================================
+
+.env
+.env.*
+*.env
+secrets/
+credentials/
+*.pem
+*.key
+*.crt
+
+# ============================================================
+# Logs
+# ============================================================
+
+*.log
+logs/
+wandb/
+mlruns/
+runs.log
+
+# ============================================================
+# Project experiment outputs
+# ============================================================
+
+experimentos_pinn/
+experimentos_pinn_basket/
+results/
+results_*/
+outputs/
+output/
+artifacts/
+checkpoints/
+
+# ============================================================
+# Models / weights
+# ============================================================
+
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.joblib
+*.pkl
+*.pickle
+
+# ============================================================
+# Generated figures and tables
+# ============================================================
+
+figures/
+figures_*/
+plots/
+plots_*/
+tables/
+tables_*/
+reports/
+relatorio*/
+relatorios/
+exports_for_mathematica/
+analise_resultados/
+analise_resultados_notebook/
+
+# ============================================================
+# Data
+# ============================================================
+
+data/
+datasets/
+raw_data/
+processed_data/
+*.parquet
+*.feather
+*.h5
+*.hdf5
+
+# If you want to version small example CSVs, uncomment and use:
+# !data/examples/
+# !data/examples/*.csv
+
+# ============================================================
+# Generated archives
+# ============================================================
+
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ============================================================
+# Temporary files
+# ============================================================
+
+tmp/
+temp/
+.cache/
+.cache_*/
+scratch/
+trash/
+*.tmp
+*.bak
+
+# ============================================================
+# OS files
+# ============================================================
+
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================================================
+# LaTeX / paper builds
+# ============================================================
+
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.xdv
+
+# Keep source files
+# !*.tex
+# !*.bib
