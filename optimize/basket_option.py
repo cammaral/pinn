@@ -6,7 +6,6 @@ import numpy as np
 import torch as tc
 from tqdm import tqdm
 
-from utils.get_data import convert_to_tensor
 from utils.device import pick_torch_device
 
 
@@ -69,12 +68,17 @@ class BasketOptionOptimizerND:
         raise ValueError("Optimizer not recognized. Use 'Adam'.")
 
     def _to_tensor(self, arr, requires_grad=True):
-        return convert_to_tensor(
-            arr,
-            requires_grad=requires_grad,
-            dtype=self.dtype,
-            device=self.device,
-        )
+        """
+        Convert numpy/list data to a Torch tensor preserving its original 2D shape.
+
+        Important: the original project helper convert_to_tensor() reshapes everything
+        to (-1, 1), which is correct for the 1D Black-Scholes code but wrong here.
+        For basket options, S has shape (N_points, n_assets), while t and V have
+        shape (N_points, 1). Flattening S would turn (1000, 2) into (2000, 1) and
+        break torch.cat([S_norm, t_norm], dim=1).
+        """
+        t = tc.as_tensor(arr, dtype=self.dtype, device=self.device)
+        return t.clone().detach().requires_grad_(bool(requires_grad))
 
     def _normalize_S(self, S):
         return np.asarray(S, dtype=float) / self.S_max.reshape(1, -1)
@@ -114,7 +118,9 @@ class BasketOptionOptimizerND:
             for j in range(self.n_assets):
                 diffusion = diffusion + 0.5 * self.cov[i, j] * S_norm[:, i:i+1] * S_norm[:, j:j+1] * H[:, i, j:j+1]
 
-        residual = dV_dt + diffusion + drift - self.r * Vpred
+        # normalized variables: t_norm = t / T, V_norm = V / V_max
+        # Physical PDE divided by V_max gives (1/T) dV_norm/dt_norm + ...
+        residual = (dV_dt / self.T) + diffusion + drift - self.r * Vpred
         return tc.mean(residual ** 2)
 
     def train(self, normalize: bool = True, return_loss: bool = False, return_all: bool = False):
